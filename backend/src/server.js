@@ -6,6 +6,7 @@ const cors = require('cors');
 const connectDB = require('./config/db.config');
 connectDB(); // Kích hoạt kết nối đến MongoDB
 const authRoutes = require('./modules/auth/auth.route');
+const tourRoutes = require('./modules/tours/tour.route');
 
 const app = express();
 
@@ -18,6 +19,7 @@ app.use(express.urlencoded({ extended: true }));
 
 // --- 2. ROUTES CƠ BẢN ---
 app.use('/api/auth', authRoutes);
+app.use('/api/tours', tourRoutes);
 // API kiểm tra sức khỏe của Server
 app.get('/', (req, res) => {
     res.json({ 

@@ -17,6 +17,17 @@ const tourApi = {
     deleteTour: (id) => {
         const url = `/tours/${id}`;
         return axiosClient.delete(url);
+    },
+    // Hàm lấy thông tin chi tiết của 1 tour để đổ vào form
+    getTourById: (id) => {
+        const url = `/tours/${id}`;
+        return axiosClient.get(url);
+    },
+
+    // Hàm cập nhật tour (PUT)
+    updateTour: (id, data) => {
+        const url = `/tours/${id}`;
+        return axiosClient.put(url, data);
     }
 };
 
