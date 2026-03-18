@@ -64,8 +64,3 @@ cd travel-management-system
 4. Chạy Frontend: `npm start` hoặc `npm run dev` (nếu dùng Vite).
 
 ---
-
-## 🤝 Quy định làm việc nhóm (Git Convention)
-* **Không code trực tiếp trên nhánh `main`**.
-* Khi làm tính năng mới, hãy tạo nhánh: `git checkout -b feature/ten-tinh-nang` (VD: `feature/login`, `feature/tour-crud`).
-* Khi code xong, commit rõ ràng: `git commit -m "Thêm tính năng đăng nhập"` và push lên nhánh của mình.
