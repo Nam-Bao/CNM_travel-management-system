@@ -7,6 +7,7 @@ import AdminLayout from './features/admin/components/AdminLayout';
 import ManageToursPage from './features/tours/pages/ManageToursPage';
 import EditTourPage from './features/tours/pages/EditTourPage';
 import DashboardPage from './features/admin/pages/DashboardPage';
+import TourDetailPage from './features/tours/pages/TourDetailPage';
 
 function App() {
   return (
@@ -14,6 +15,11 @@ function App() {
         <Routes>
             {/* Đặt Trang Chủ làm mặc định */}
             <Route path="/" element={<HomePage />} />
+
+            {/* Các trang dành cho Khách hàng */}
+            <Route path="/" element={<HomePage />} />
+            <Route path="/tours/:slug" element={<TourDetailPage />} /> {/* Thêm dòng này */}
+            <Route path="/auth" element={<AuthPage />} />
             
             {/* Trang Đăng nhập/Đăng ký */}
             <Route path="/auth" element={<AuthPage />} />

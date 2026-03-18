@@ -45,6 +45,19 @@ const getTourById = async (req, res) => {
     }
 };
 
+// [GET] /api/tours/slug/:slug - Lấy chi tiết 1 Tour bằng Slug
+const getTourBySlug = async (req, res) => {
+    try {
+        const tour = await Tour.findOne({ slug: req.params.slug });
+        if (!tour) {
+            return res.status(404).json({ status: 'error', message: 'Không tìm thấy tour này!' });
+        }
+        res.status(200).json({ status: 'success', data: tour });
+    } catch (error) {
+        res.status(500).json({ status: 'error', message: 'Lỗi server' });
+    }
+};
+
 // [PUT] /api/tours/:id - Cập nhật thông tin Tour (Chỉ Admin)
 const updateTour = async (req, res) => {
     try {
@@ -80,6 +93,7 @@ module.exports = {
     createTour,
     getAllTours,
     getTourById,
+    getTourBySlug,
     updateTour,
     deleteTour
 };

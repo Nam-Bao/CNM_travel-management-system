@@ -1,5 +1,5 @@
 import React from 'react';
-
+import { Link } from 'react-router-dom';
 const TourCard = ({ tour }) => {
     // Hàm format giá tiền sang VNĐ cho đẹp
     const formatPrice = (price) => {
@@ -53,9 +53,12 @@ const TourCard = ({ tour }) => {
                 <span className="text-2xl font-extrabold text-red-500">
                     {formatPrice(tour.price)}
                 </span>
-                <button className="bg-blue-600 text-white px-5 py-2 rounded-lg font-bold hover:bg-blue-700 transition shadow-md text-sm">
-                    Xem Chi Tiết
-                </button>
+            <Link 
+                to={`/tours/${tour.slug}`} 
+                className="bg-blue-600 text-white px-5 py-2 rounded-lg font-bold hover:bg-blue-700 transition shadow-md text-sm block text-center"
+            >
+                Xem Chi Tiết
+            </Link>
             </div>
         </div>
     );

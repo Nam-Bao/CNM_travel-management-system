@@ -24,6 +24,11 @@ const tourApi = {
         return axiosClient.get(url);
     },
 
+    getTourBySlug: (slug) => {
+        const url = `/tours/slug/${slug}`;
+        return axiosClient.get(url);
+    },
+
     // Hàm cập nhật tour (PUT)
     updateTour: (id, data) => {
         const url = `/tours/${id}`;

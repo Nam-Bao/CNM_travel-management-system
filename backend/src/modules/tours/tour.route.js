@@ -5,6 +5,7 @@ const { verifyToken, verifyAdmin } = require('../../middlewares/auth.middleware'
 
 // Các API ai cũng có thể truy cập (Khách hàng xem tour)
 router.get('/', tourController.getAllTours);
+router.get('/slug/:slug', tourController.getTourBySlug);
 router.get('/:id', tourController.getTourById);
 
 // Các API bắt buộc phải là Admin mới được thao tác
