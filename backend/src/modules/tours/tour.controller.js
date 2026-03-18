@@ -3,7 +3,17 @@ const Tour = require('./tour.model');
 // [POST] /api/tours - Thêm Tour mới (Chỉ Admin)
 const createTour = async (req, res) => {
     try {
-        const newTour = new Tour(req.body);
+        // Copy toàn bộ dữ liệu (title, price,...) từ req.body ra một biến mới
+        const tourData = { ...req.body };
+
+        // Nếu Frontend gửi lên một File, Multer đã đẩy lên Cloud và để lại cái Link mới toanh ở req.file.path
+        if (req.file) {
+            tourData.image_url = req.file.path; // Lấy link Cloudinary đè vào
+        } 
+        // Nếu không có File (người dùng nhập bằng Link URL), req.file sẽ bị null.
+        // Khi đó, hệ thống sẽ tự động dùng cái tourData.image_url đã có sẵn từ form nhập tay.
+
+        const newTour = new Tour(tourData);
         const savedTour = await newTour.save();
         
         res.status(201).json({
@@ -59,12 +69,22 @@ const getTourBySlug = async (req, res) => {
 };
 
 // [PUT] /api/tours/:id - Cập nhật thông tin Tour (Chỉ Admin)
+// [PUT] /api/tours/:id - Cập nhật thông tin Tour
 const updateTour = async (req, res) => {
     try {
+        // 1. Lấy toàn bộ dữ liệu text gửi lên
+        const updateData = { ...req.body };
+
+        // 2. KẾT NỐI VỚI CLOUDINARY: Nếu có file ảnh mới gửi lên, lấy link gắn vào
+        if (req.file) {
+            updateData.image_url = req.file.path;
+        }
+
+        // 3. Tiến hành cập nhật vào Database bằng dữ liệu đã xử lý
         const updatedTour = await Tour.findByIdAndUpdate(
             req.params.id, 
-            { $set: req.body }, 
-            { new: true, runValidators: true } // Trả về data mới và chạy lại kiểm tra dữ liệu
+            { $set: updateData }, 
+            { new: true, runValidators: true } 
         );
 
         if (!updatedTour) {
@@ -75,7 +95,6 @@ const updateTour = async (req, res) => {
         res.status(400).json({ status: 'error', message: error.message });
     }
 };
-
 // [DELETE] /api/tours/:id - Xóa Tour (Chỉ Admin)
 const deleteTour = async (req, res) => {
     try {

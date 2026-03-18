@@ -51,7 +51,7 @@ const TourDetailPage = () => {
                         {/* Ảnh bìa */}
                         <div className="rounded-2xl overflow-hidden shadow-lg h-96">
                             <img 
-                                src={tour.image_url || 'https://via.placeholder.com/800x400'} 
+                                src={tour.image_url || 'https://placehold.co/800x400/e2e8f0/475569?text=Chua+Co+Anh'}
                                 alt={tour.title} 
                                 className="w-full h-full object-cover"
                             />
