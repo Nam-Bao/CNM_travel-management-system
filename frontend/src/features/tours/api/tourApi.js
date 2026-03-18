@@ -11,7 +11,9 @@ const tourApi = {
     // Chức năng này sẽ bị Backend chặn lại nếu user chưa đăng nhập hoặc không phải Admin
     createTour: (data) => {
         const url = '/tours';
-        return axiosClient.post(url, data); 
+        return axiosClient.post(url, data, {
+            headers: { 'Content-Type': 'multipart/form-data' } 
+        });
     },
 
     deleteTour: (id) => {
@@ -32,7 +34,9 @@ const tourApi = {
     // Hàm cập nhật tour (PUT)
     updateTour: (id, data) => {
         const url = `/tours/${id}`;
-        return axiosClient.put(url, data);
+        return axiosClient.put(url, data, {
+                    headers: { 'Content-Type': 'multipart/form-data' } 
+                });
     }
 };
 

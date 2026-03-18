@@ -17,7 +17,7 @@ const TourCard = ({ tour }) => {
             {/* Hình ảnh Tour - Có hiệu ứng zoom nhẹ khi hover */}
             <div className="relative h-56 overflow-hidden">
                 <img 
-                    src={tour.image_url || 'https://via.placeholder.com/400x300?text=No+Image'} 
+                    src={tour.image_url || 'https://placehold.co/400x300/e2e8f0/475569?text=Chua+Co+Anh'}
                     alt={tour.title} 
                     className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                 />
