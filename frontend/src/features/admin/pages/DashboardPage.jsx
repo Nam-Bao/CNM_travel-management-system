@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import tourApi from '../../tours/api/tourApi';
+import userApi from '../../users/api/userApi';
 
 const DashboardPage = () => {
     // State lưu trữ các con số thống kê
@@ -16,15 +17,24 @@ const DashboardPage = () => {
     useEffect(() => {
         const fetchDashboardData = async () => {
             try {
-                const tourRes = await tourApi.getAllTours();
+                // (Giả sử bạn đang dùng code cũ với Promise.all)
+                const [tourRes, userRes] = await Promise.all([
+                    tourApi.getAllTours(),
+                    userApi.getAllUsers()
+                ]);
+
                 const tours = tourRes.data;
+                const allUsers = userRes.data; 
+                
+                // LỌC LOGIC: Chỉ đếm những người có role là 'customer' (hoặc 'user' tùy bạn thiết kế)
+                const actualCustomers = allUsers.filter(user => user.role !== 'admin');
                 
                 setStats(prev => ({
                     ...prev,
-                    totalTours: tours.length // Đếm số lượng tour thật
+                    totalTours: tours.length,
+                    totalUsers: actualCustomers.length // Cập nhật số liệu đã lọc
                 }));
 
-                // Lấy 3 tour mới nhất để hiển thị ở bảng "Hoạt động gần đây"
                 setRecentTours(tours.slice(0, 3));
             } catch (error) {
                 console.error('Lỗi khi tải dữ liệu Dashboard:', error);
