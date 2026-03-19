@@ -8,6 +8,7 @@ import ManageToursPage from './features/tours/pages/ManageToursPage';
 import EditTourPage from './features/tours/pages/EditTourPage';
 import DashboardPage from './features/admin/pages/DashboardPage';
 import TourDetailPage from './features/tours/pages/TourDetailPage';
+import ManageUsersPage from './features/users/pages/ManageUsersPage';
 
 function App() {
   return (
@@ -35,6 +36,7 @@ function App() {
                 {/* trang quản lý danh sách sẽ thêm vào đây: */}
                 <Route path="tours" element={<ManageToursPage />} />
                 <Route path="edit-tour/:id" element={<EditTourPage />} />
+                <Route path="users" element={<ManageUsersPage />} />
             </Route>
         </Routes>
     </BrowserRouter>
