@@ -35,7 +35,7 @@ const AdminLayout = () => {
                         ➕ Thêm Tour Mới
                     </Link> */}
                     <Link to="/admin/tours" className={`flex items-center px-4 py-3 rounded-lg transition-colors font-medium ${isActive('/admin/tours')}`}>
-                        🗂️ Danh sách Tour
+                        🗂️ Quản lý Tour
                     </Link>
                     <Link to="/admin/bookings" className={`flex items-center px-4 py-3 rounded-lg transition-colors font-medium ${isActive('/admin/bookings')}`}>
                         🎫 Quản lý Đặt chỗ
