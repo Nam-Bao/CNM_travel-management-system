@@ -6,18 +6,18 @@ const DashboardPage = () => {
     // State lưu trữ các con số thống kê
     const [stats, setStats] = useState({
         totalTours: 0,           // Sẽ lấy thật từ Database
-        totalUsers: 128,         // Tạm thời giả định
+        totalUsers: 0,           // Sẽ lấy thật từ Database
         totalBookings: 45,       // Tạm thời giả định
         revenue: 125000000       // Tạm thời giả định (125 triệu)
     });
 
     const [recentTours, setRecentTours] = useState([]);
 
-    // Lấy dữ liệu thật từ API Tour của bạn
+    // Lấy dữ liệu thật từ API Tour và User
     useEffect(() => {
         const fetchDashboardData = async () => {
             try {
-                // (Giả sử bạn đang dùng code cũ với Promise.all)
+                // Tối ưu hóa: Gọi 2 API cùng lúc bằng Promise.all
                 const [tourRes, userRes] = await Promise.all([
                     tourApi.getAllTours(),
                     userApi.getAllUsers()
@@ -26,7 +26,7 @@ const DashboardPage = () => {
                 const tours = tourRes.data;
                 const allUsers = userRes.data; 
                 
-                // LỌC LOGIC: Chỉ đếm những người có role là 'customer' (hoặc 'user' tùy bạn thiết kế)
+                // LỌC LOGIC: Chỉ đếm những người có role là 'customer' hoặc 'user'
                 const actualCustomers = allUsers.filter(user => user.role !== 'admin');
                 
                 setStats(prev => ({
@@ -35,7 +35,8 @@ const DashboardPage = () => {
                     totalUsers: actualCustomers.length // Cập nhật số liệu đã lọc
                 }));
 
-                setRecentTours(tours.slice(0, 3));
+                // FIX 1: Đảo ngược mảng (reverse) để lấy tour MỚI NHẤT, và lấy 5 tour cho đẹp
+                setRecentTours([...tours].reverse().slice(0, 5));
             } catch (error) {
                 console.error('Lỗi khi tải dữ liệu Dashboard:', error);
             }
@@ -44,9 +45,21 @@ const DashboardPage = () => {
         fetchDashboardData();
     }, []);
 
-    // Hàm format tiền tệ
-    const formatPrice = (price) => {
-        return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(price);
+    // FIX 2: Hàm format số bình thường (Dùng cho Doanh thu)
+    const formatRevenue = (amount) => {
+        return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
+    };
+
+    // FIX 3: Hàm format giá Tour (Dùng để bóc tách Object giá vé)
+    const formatTourPrice = (priceObject) => {
+        if (priceObject?.adult !== undefined && priceObject?.adult !== null) {
+            return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(priceObject.adult);
+        }
+        // Đề phòng database cũ còn sót lại giá trị là số
+        if (typeof priceObject === 'number') {
+            return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(priceObject);
+        }
+        return 'Chưa cập nhật';
     };
 
     return (
@@ -58,7 +71,7 @@ const DashboardPage = () => {
                 {/* Thẻ 1: Doanh thu */}
                 <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-6 text-white shadow-lg transform hover:scale-105 transition duration-300">
                     <div className="text-green-100 text-sm font-bold uppercase tracking-wider mb-2">Tổng Doanh Thu</div>
-                    <div className="text-3xl font-black">{formatPrice(stats.revenue)}</div>
+                    <div className="text-3xl font-black">{formatRevenue(stats.revenue)}</div>
                     <div className="text-sm mt-4">↑ 12% so với tháng trước</div>
                 </div>
 
@@ -76,11 +89,11 @@ const DashboardPage = () => {
                     <div className="text-sm mt-4">✓ Dữ liệu thực tế từ Database</div>
                 </div>
 
-                {/* Thẻ 4: Khách hàng */}
+                {/* Thẻ 4: Khách hàng (Dữ liệu THẬT) */}
                 <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl p-6 text-white shadow-lg transform hover:scale-105 transition duration-300">
                     <div className="text-orange-100 text-sm font-bold uppercase tracking-wider mb-2">Khách Hàng</div>
                     <div className="text-3xl font-black">{stats.totalUsers} <span className="text-lg font-medium">người</span></div>
-                    <div className="text-sm mt-4">⭐ 80% đánh giá 5 sao</div>
+                    <div className="text-sm mt-4">⭐ Tỉ lệ hoạt động cao</div>
                 </div>
             </div>
 
@@ -102,7 +115,8 @@ const DashboardPage = () => {
                                     </div>
                                 </div>
                                 <div className="text-right">
-                                    <div className="font-bold text-red-500">{formatPrice(tour.price)}</div>
+                                    {/* Sử dụng hàm formatTourPrice để in ra giá người lớn */}
+                                    <div className="font-bold text-red-500">{formatTourPrice(tour.price)}</div>
                                     <div className="text-xs font-medium text-green-600 px-2 py-1 bg-green-100 rounded-full inline-block mt-1">
                                         Còn {tour.available_seats} chỗ
                                     </div>

@@ -3,24 +3,25 @@ const Tour = require('./tour.model');
 // [POST] /api/tours - Thêm Tour mới (Chỉ Admin)
 const createTour = async (req, res) => {
     try {
-        // Copy toàn bộ dữ liệu (title, price,...) từ req.body ra một biến mới
         const tourData = { ...req.body };
 
-        // Nếu Frontend gửi lên một File, Multer đã đẩy lên Cloud và để lại cái Link mới toanh ở req.file.path
-        if (req.file) {
-            tourData.image_url = req.file.path; // Lấy link Cloudinary đè vào
+        // 1. Dịch ngược chuỗi chữ thành Object / Array
+        if (req.body.price) tourData.price = JSON.parse(req.body.price);
+        if (req.body.itinerary) tourData.itinerary = JSON.parse(req.body.itinerary);
+
+        // 2. Gom tất cả link ảnh mới tải lên vào mảng images
+        tourData.images = []; 
+        if (req.files && req.files.length > 0) {
+            tourData.images = req.files.map(file => file.path); // Lấy link Cloudinary của từng ảnh
         } 
-        // Nếu không có File (người dùng nhập bằng Link URL), req.file sẽ bị null.
-        // Khi đó, hệ thống sẽ tự động dùng cái tourData.image_url đã có sẵn từ form nhập tay.
+        else if (req.body.images) {
+            tourData.images = Array.isArray(req.body.images) ? req.body.images : [req.body.images];
+        }
 
         const newTour = new Tour(tourData);
         const savedTour = await newTour.save();
         
-        res.status(201).json({
-            status: 'success',
-            message: 'Tạo tour mới thành công!',
-            data: savedTour
-        });
+        res.status(201).json({ status: 'success', message: 'Thêm Tour thành công', data: savedTour });
     } catch (error) {
         res.status(400).json({ status: 'error', message: error.message });
     }
@@ -69,28 +70,42 @@ const getTourBySlug = async (req, res) => {
 };
 
 // [PUT] /api/tours/:id - Cập nhật thông tin Tour (Chỉ Admin)
-// [PUT] /api/tours/:id - Cập nhật thông tin Tour
+// [PUT] /api/tours/:id - Cập nhật Tour
 const updateTour = async (req, res) => {
     try {
-        // 1. Lấy toàn bộ dữ liệu text gửi lên
-        const updateData = { ...req.body };
+        const tourData = { ...req.body };
 
-        // 2. KẾT NỐI VỚI CLOUDINARY: Nếu có file ảnh mới gửi lên, lấy link gắn vào
-        if (req.file) {
-            updateData.image_url = req.file.path;
+        // 1. CHỮA LỖI ĐỎ: Dịch ngược chuỗi chữ thành Object/Array
+        if (req.body.price && typeof req.body.price === 'string') {
+            tourData.price = JSON.parse(req.body.price);
+        }
+        if (req.body.itinerary && typeof req.body.itinerary === 'string') {
+            tourData.itinerary = JSON.parse(req.body.itinerary);
         }
 
-        // 3. Tiến hành cập nhật vào Database bằng dữ liệu đã xử lý
+        // 2. Xử lý lưu ảnh (hỗ trợ cả File tải lên và Link URL)
+        if (req.files && req.files.length > 0) {
+            // Cách 1: Người dùng upload file mới từ máy tính
+            tourData.images = req.files.map(file => file.path);
+        } else if (req.body.images) {
+            // Cách 2: Người dùng dán Link URL
+            tourData.images = Array.isArray(req.body.images) ? req.body.images : [req.body.images];
+        }
+        // Lưu ý: Nếu Admin không tải ảnh mới, req.files rỗng và req.body.images rỗng
+        // -> tourData.images sẽ không được tạo ra -> Backend sẽ giữ nguyên ảnh cũ trong DB.
+
+        // 3. CHỮA LỖI VÀNG (Terminal): Sửa new: true thành returnDocument: 'after'
         const updatedTour = await Tour.findByIdAndUpdate(
-            req.params.id, 
-            { $set: updateData }, 
-            { new: true, runValidators: true } 
+            req.params.id,
+            tourData,
+            { returnDocument: 'after', runValidators: true }
         );
 
         if (!updatedTour) {
-            return res.status(404).json({ status: 'error', message: 'Không tìm thấy tour này!' });
+            return res.status(404).json({ status: 'error', message: 'Không tìm thấy Tour!' });
         }
-        res.status(200).json({ status: 'success', message: 'Cập nhật thành công!', data: updatedTour });
+
+        res.status(200).json({ status: 'success', message: 'Cập nhật thành công', data: updatedTour });
     } catch (error) {
         res.status(400).json({ status: 'error', message: error.message });
     }
