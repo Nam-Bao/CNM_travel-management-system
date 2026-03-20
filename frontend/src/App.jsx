@@ -9,6 +9,7 @@ import EditTourPage from './features/tours/pages/EditTourPage';
 import DashboardPage from './features/admin/pages/DashboardPage';
 import TourDetailPage from './features/tours/pages/TourDetailPage';
 import ManageUsersPage from './features/users/pages/ManageUsersPage';
+import ProtectedRoute from './components/ProtectedRoute';
 
 function App() {
   return (
@@ -25,18 +26,21 @@ function App() {
             {/* Trang Đăng nhập/Đăng ký */}
             <Route path="/auth" element={<AuthPage />} />
             
-            {/* Trang Admin thêm Tour */}
-            {/* Nhóm các trang dành cho Admin (Được bọc bởi AdminLayout) */}
-            <Route path="/admin" element={<AdminLayout />}>
-                {/* Trang Dashboard sẽ là trang đầu tiên */}
-                <Route path="dashboard" element={<DashboardPage />} />
-                {/* Khi vào /admin/add-tour, nó sẽ hiển thị AdminLayout + AddTourPage ở giữa */}
-                <Route path="add-tour" element={<AddTourPage />} />
-                
-                {/* trang quản lý danh sách sẽ thêm vào đây: */}
-                <Route path="tours" element={<ManageToursPage />} />
-                <Route path="edit-tour/:id" element={<EditTourPage />} />
-                <Route path="users" element={<ManageUsersPage />} />
+
+            <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
+              {/* Trang Admin thêm Tour */}
+              {/* Nhóm các trang dành cho Admin (Được bọc bởi AdminLayout) */}
+              <Route path="/admin" element={<AdminLayout />}>
+                  {/* Trang Dashboard sẽ là trang đầu tiên */}
+                  <Route path="dashboard" element={<DashboardPage />} />
+                  {/* Khi vào /admin/add-tour, nó sẽ hiển thị AdminLayout + AddTourPage ở giữa */}
+                  <Route path="add-tour" element={<AddTourPage />} />
+                  
+                  {/* trang quản lý danh sách sẽ thêm vào đây: */}
+                  <Route path="tours" element={<ManageToursPage />} />
+                  <Route path="edit-tour/:id" element={<EditTourPage />} />
+                  <Route path="users" element={<ManageUsersPage />} />
+              </Route>
             </Route>
         </Routes>
     </BrowserRouter>

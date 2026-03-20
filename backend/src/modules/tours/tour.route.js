@@ -10,12 +10,12 @@ router.get('/slug/:slug', tourController.getTourBySlug);
 router.get('/:id', tourController.getTourById);
 
 // Điều này báo cho Backend biết: Hãy đón một file có tên là 'image', up lên Cloud đi rồi mới chạy vào Controller
-router.post('/', verifyToken, uploadCloud.single('image'), tourController.createTour);
+router.post('/', verifyAdmin, uploadCloud.single('image'), tourController.createTour);
 
 // Các API bắt buộc phải là Admin mới được thao tác
 // Chú ý: Ta gắn verifyAdmin vào giữa để nó kiểm tra trước khi chạy vào Controller
-router.post('/', verifyToken, tourController.createTour);
-router.put('/:id', verifyToken, uploadCloud.single('image'), tourController.updateTour);
-router.delete('/:id', verifyToken, tourController.deleteTour);
+router.post('/', verifyAdmin, tourController.createTour);
+router.put('/:id', verifyAdmin, uploadCloud.single('image'), tourController.updateTour);
+router.delete('/:id', verifyAdmin, tourController.deleteTour);
 
 module.exports = router;
