@@ -11,6 +11,10 @@ import DashboardPage from "./features/admin/pages/DashboardPage";
 import TourDetailPage from "./features/tours/pages/TourDetailPage";
 import BookingHistory from "./features/bookings/pages/BookingHistory";
 
+// code từ bạn của bạn
+import ManageUsersPage from "./features/users/pages/ManageUsersPage";
+import ProtectedRoute from "./components/ProtectedRoute";
+
 function App() {
   return (
     <BrowserRouter>
@@ -25,12 +29,15 @@ function App() {
         <Route path="/register" element={<AuthPage />} />
         <Route path="/my-bookings" element={<BookingHistory />} />
 
-        {/* Admin */}
-        <Route path="/admin" element={<AdminLayout />}>
-          <Route path="dashboard" element={<DashboardPage />} />
-          <Route path="add-tour" element={<AddTourPage />} />
-          <Route path="tours" element={<ManageToursPage />} />
-          <Route path="edit-tour/:id" element={<EditTourPage />} />
+        {/* Admin có bảo vệ quyền */}
+        <Route element={<ProtectedRoute allowedRoles={["admin"]} />}>
+          <Route path="/admin" element={<AdminLayout />}>
+            <Route path="dashboard" element={<DashboardPage />} />
+            <Route path="add-tour" element={<AddTourPage />} />
+            <Route path="tours" element={<ManageToursPage />} />
+            <Route path="edit-tour/:id" element={<EditTourPage />} />
+            <Route path="users" element={<ManageUsersPage />} />
+          </Route>
         </Route>
       </Routes>
     </BrowserRouter>

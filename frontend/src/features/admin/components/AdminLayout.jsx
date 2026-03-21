@@ -31,14 +31,17 @@ const AdminLayout = () => {
                     <Link to="/admin/dashboard" className={`flex items-center px-4 py-3 rounded-lg transition-colors font-medium ${isActive('/admin/dashboard')}`}>
                         📊 Bảng điều khiển
                     </Link>
-                    <Link to="/admin/add-tour" className={`flex items-center px-4 py-3 rounded-lg transition-colors font-medium ${isActive('/admin/add-tour')}`}>
+                    {/* <Link to="/admin/add-tour" className={`flex items-center px-4 py-3 rounded-lg transition-colors font-medium ${isActive('/admin/add-tour')}`}>
                         ➕ Thêm Tour Mới
-                    </Link>
+                    </Link> */}
                     <Link to="/admin/tours" className={`flex items-center px-4 py-3 rounded-lg transition-colors font-medium ${isActive('/admin/tours')}`}>
-                        🗂️ Danh sách Tour
+                        🗂️ Quản lý Tour
                     </Link>
                     <Link to="/admin/bookings" className={`flex items-center px-4 py-3 rounded-lg transition-colors font-medium ${isActive('/admin/bookings')}`}>
                         🎫 Quản lý Đặt chỗ
+                    </Link>
+                    <Link to="/admin/users" className={`flex items-center px-4 py-3 rounded-lg transition-colors font-medium ${isActive('/admin/users')}`}>
+                        👥 Quản lý Người Dùng
                     </Link>
                 </nav>
 

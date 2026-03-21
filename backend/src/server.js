@@ -5,8 +5,14 @@ const cors = require("cors");
 // Import file cấu hình DB để kích hoạt hàm testConnection
 const connectDB = require("./config/db.config");
 connectDB(); // Kích hoạt kết nối đến MongoDB
+<<<<<<< HEAD
 const authRoutes = require("./modules/auth/auth.route");
 const tourRoutes = require("./modules/tours/tour.route");
+=======
+const authRoutes = require('./modules/auth/auth.route');
+const tourRoutes = require('./modules/tours/tour.route');
+const userRoutes = require('./modules/users/user.route');
+>>>>>>> 25396e6df31d609341089dadb81913efb9d236e8
 
 const app = express();
 
@@ -18,8 +24,15 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // --- 2. ROUTES CƠ BẢN ---
+<<<<<<< HEAD
 app.use("/api/auth", authRoutes);
 app.use("/api/tours", tourRoutes);
+=======
+app.use('/api/auth', authRoutes);
+app.use('/api/tours', tourRoutes);
+app.use('/api/users', userRoutes);
+
+>>>>>>> 25396e6df31d609341089dadb81913efb9d236e8
 // API kiểm tra sức khỏe của Server
 app.get("/", (req, res) => {
   res.json({
