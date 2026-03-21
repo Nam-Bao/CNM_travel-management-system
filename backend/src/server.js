@@ -2,38 +2,32 @@ require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 
-// Import file cấu hình DB để kích hoạt hàm testConnection
+// DB
 const connectDB = require("./config/db.config");
-connectDB(); // Kích hoạt kết nối đến MongoDB
-<<<<<<< HEAD
+connectDB();
+
+// Routes
 const authRoutes = require("./modules/auth/auth.route");
 const tourRoutes = require("./modules/tours/tour.route");
-=======
-const authRoutes = require('./modules/auth/auth.route');
-const tourRoutes = require('./modules/tours/tour.route');
-const userRoutes = require('./modules/users/user.route');
->>>>>>> 25396e6df31d609341089dadb81913efb9d236e8
+const userRoutes = require("./modules/users/user.route");
+const bookingRoutes = require("./modules/bookings/booking.route");
+const reviewRoutes = require("./modules/reviews/review.route");
 
 const app = express();
 
 // --- 1. MIDDLEWARE ---
-// Cho phép Frontend (React) gọi API mà không bị chặn bởi lỗi bảo mật CORS
 app.use(cors());
-// Giúp server đọc được dữ liệu JSON do Frontend gửi lên
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// --- 2. ROUTES CƠ BẢN ---
-<<<<<<< HEAD
+// --- 2. ROUTES ---
 app.use("/api/auth", authRoutes);
 app.use("/api/tours", tourRoutes);
-=======
-app.use('/api/auth', authRoutes);
-app.use('/api/tours', tourRoutes);
-app.use('/api/users', userRoutes);
+app.use("/api/users", userRoutes);
+app.use("/api/bookings", bookingRoutes);
+app.use("/api/reviews", reviewRoutes);
 
->>>>>>> 25396e6df31d609341089dadb81913efb9d236e8
-// API kiểm tra sức khỏe của Server
+// Test API
 app.get("/", (req, res) => {
   res.json({
     status: "success",
@@ -41,7 +35,7 @@ app.get("/", (req, res) => {
   });
 });
 
-// --- 3. KHỞI CHẠY SERVER ---
+// --- 3. START SERVER ---
 const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
@@ -50,9 +44,3 @@ app.listen(PORT, () => {
   console.log(`🔗 Link truy cập: http://localhost:${PORT}`);
   console.log(`=========================================\n`);
 });
-const bookingRoutes = require("./modules/bookings/booking.route");
-
-app.use("/api/bookings", bookingRoutes);
-const reviewRoutes = require("./modules/reviews/review.route");
-
-app.use("/api/reviews", reviewRoutes);
