@@ -10,6 +10,7 @@ import EditTourPage from "./features/tours/pages/EditTourPage";
 import DashboardPage from "./features/admin/pages/DashboardPage";
 import TourDetailPage from "./features/tours/pages/TourDetailPage";
 import BookingHistory from "./features/bookings/pages/BookingHistory";
+import ManageBookings from './features/admin/pages/ManageBookings';
 
 // code từ bạn của bạn
 import ManageUsersPage from "./features/users/pages/ManageUsersPage";
@@ -37,6 +38,7 @@ function App() {
             <Route path="tours" element={<ManageToursPage />} />
             <Route path="edit-tour/:id" element={<EditTourPage />} />
             <Route path="users" element={<ManageUsersPage />} />
+            <Route path="/admin/bookings" element={<ManageBookings />} />
           </Route>
         </Route>
       </Routes>

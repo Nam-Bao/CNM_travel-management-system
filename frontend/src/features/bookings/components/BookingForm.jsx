@@ -17,7 +17,6 @@ const BookingForm = ({ tour }) => {
   // KIỂM TRA TOUR ĐÃ KẾT THÚC CHƯA
   const today = new Date();
   const startDate = new Date(tour.start_date);
-  // Nếu ngày hôm nay lớn hơn ngày khởi hành => Tour đã kết thúc
   const isTourEnded = today > startDate;
 
   const formatPrice = (p) =>
@@ -33,11 +32,26 @@ const BookingForm = ({ tour }) => {
   const salePercentage = tour?.sale_percentage || 0;
   const finalPrice = basePrice * (1 - salePercentage / 100);
 
+  // Tính tổng số ghế ĐANG CHỌN trên Form (Theo logic của đồ án: Có cộng cả infant)
+  const currentTotalSeats = guestSize.adult + guestSize.child + guestSize.infant;
+
   const handleUpdate = (type, op) => {
     setGuestSize((prev) => {
-      let val = op === "plus" ? prev[type] + 1 : prev[type] - 1;
-      if (type === "adult" && val < 1) val = 1;
-      if (type !== "adult" && val < 0) val = 0;
+      let val = prev[type];
+      
+      if (op === "plus") {
+        // YÊU CẦU 2: CHẶN DẤU CỘNG NẾU QUÁ SỐ VÉ TRỐNG
+        if (currentTotalSeats >= tour.available_seats) {
+          alert(`Rất tiếc! Tour chỉ còn đúng ${tour.available_seats} chỗ trống.`);
+          return prev;
+        }
+        val += 1;
+      } else if (op === "minus") {
+        val -= 1;
+        if (type === "adult" && val < 1) val = 1;
+        if (type !== "adult" && val < 0) val = 0;
+      }
+      
       return { ...prev, [type]: val };
     });
   };
@@ -46,6 +60,11 @@ const BookingForm = ({ tour }) => {
     e.preventDefault();
     if (!contactInfo.full_name || !contactInfo.phone || !contactInfo.email)
       return alert("Vui lòng điền đủ thông tin!");
+
+    // Chặn chặn một lần nữa trước khi gửi API
+    if (currentTotalSeats > tour.available_seats) {
+        return alert(`Số lượng khách vượt quá số chỗ còn trống (${tour.available_seats} vé).`);
+    }
 
     setLoading(true);
     try {
@@ -60,7 +79,7 @@ const BookingForm = ({ tour }) => {
       };
       await bookingApi.createBooking(payload);
       alert("🎉 Đặt tour thành công!");
-      navigate("/my-bookings");
+      window.location.href = "/my-bookings"; // Ép tải lại trang để làm mới Header
     } catch (err) {
       alert(err.response?.data?.message || "Lỗi đặt tour!");
     } finally {
@@ -107,15 +126,19 @@ const BookingForm = ({ tour }) => {
             <button
               type="button"
               onClick={() => handleUpdate(t, "minus")}
-              className="w-8 h-8 border rounded-full"
+              // Làm mờ nút (-) nếu là người lớn và đang ở mức 1, hoặc nếu là trẻ em/em bé và đang ở mức 0
+              disabled={(t === 'adult' && guestSize.adult <= 1) || (t !== 'adult' && guestSize[t] <= 0)}
+              className="w-8 h-8 border rounded-full bg-white font-bold text-gray-600 hover:bg-gray-200 disabled:opacity-30 disabled:cursor-not-allowed transition"
             >
               -
             </button>
-            <span className="font-bold">{guestSize[t]}</span>
+            <span className="font-bold w-4 text-center">{guestSize[t]}</span>
             <button
               type="button"
               onClick={() => handleUpdate(t, "plus")}
-              className="w-8 h-8 border rounded-full"
+              // YÊU CẦU 2: Làm mờ nút (+) nếu tổng ghế >= số vé còn trống
+              disabled={currentTotalSeats >= tour.available_seats}
+              className="w-8 h-8 border rounded-full bg-white font-bold text-gray-600 hover:bg-gray-200 disabled:opacity-30 disabled:cursor-not-allowed transition"
             >
               +
             </button>
@@ -161,8 +184,8 @@ const BookingForm = ({ tour }) => {
         </div>
         <button
           onClick={handleBooking}
-          disabled={loading}
-          className="w-full py-3 bg-orange-500 text-white font-bold rounded-xl active:scale-95 transition-transform"
+          disabled={loading || currentTotalSeats > tour.available_seats}
+          className="w-full py-3 bg-orange-500 text-white font-bold rounded-xl active:scale-95 transition-transform disabled:bg-gray-400 disabled:cursor-not-allowed"
         >
           {loading ? "ĐANG XỬ LÝ..." : "XÁC NHẬN ĐẶT TOUR"}
         </button>

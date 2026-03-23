@@ -29,26 +29,26 @@ const AdminLayout = () => {
                     <p className="px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Quản lý hệ thống</p>
                     
                     <Link to="/admin/dashboard" className={`flex items-center px-4 py-3 rounded-lg transition-colors font-medium ${isActive('/admin/dashboard')}`}>
-                        📊 Bảng điều khiển
+                        Bảng điều khiển
                     </Link>
                     {/* <Link to="/admin/add-tour" className={`flex items-center px-4 py-3 rounded-lg transition-colors font-medium ${isActive('/admin/add-tour')}`}>
                         ➕ Thêm Tour Mới
                     </Link> */}
                     <Link to="/admin/tours" className={`flex items-center px-4 py-3 rounded-lg transition-colors font-medium ${isActive('/admin/tours')}`}>
-                        🗂️ Quản lý Tour
+                        Quản lý Tour
                     </Link>
                     <Link to="/admin/bookings" className={`flex items-center px-4 py-3 rounded-lg transition-colors font-medium ${isActive('/admin/bookings')}`}>
-                        🎫 Quản lý Đặt chỗ
+                        Quản lý Đặt chỗ
                     </Link>
                     <Link to="/admin/users" className={`flex items-center px-4 py-3 rounded-lg transition-colors font-medium ${isActive('/admin/users')}`}>
-                        👥 Quản lý Người Dùng
+                        Quản lý Người Dùng
                     </Link>
                 </nav>
 
                 {/* Nút Đăng xuất ở cuối Sidebar */}
                 <div className="p-4 border-t border-gray-800">
                     <button onClick={handleLogout} className="w-full flex justify-center items-center px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-bold transition shadow-md">
-                        🚪 Đăng xuất
+                        Đăng xuất
                     </button>
                 </div>
             </aside>
@@ -63,6 +63,12 @@ const AdminLayout = () => {
                             AD
                         </div>
                     </div>
+                    <Link 
+                    to="/" 
+                    className="bg-blue-50 text-blue-600 px-4 py-2 rounded-lg font-bold hover:bg-blue-100 transition shadow-sm text-sm mr-4"
+                    >
+                    Về trang khách hàng
+                    </Link>
                 </header>
                 
                 {/* Khu vực hiển thị các trang con (Outlet) */}

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import tourApi from "../api/tourApi";
 import BookingForm from "../../bookings/components/BookingForm";
-import ReviewForm from "../../reviews/components/ReviewForm";
+// import ReviewForm from "../../reviews/components/ReviewForm";
 
 const TourDetailPage = () => {
   const { slug } = useParams();
@@ -91,31 +91,41 @@ const TourDetailPage = () => {
           <Link to="/" className="text-3xl font-extrabold text-blue-600">
             Travel<span className="text-orange-500">oke</span>
           </Link>
-          <nav className="flex items-center gap-4 text-sm font-medium">
-            {currentUser ? (
-              <div className="flex items-center gap-4 border-l-2 pl-4 border-gray-200">
-                <span className="hidden md:block text-gray-500 italic">
-                  Xin chào,{" "}
-                  <span className="font-bold text-blue-700">
-                    {currentUser.username || "Khách"}!
-                  </span>
-                </span>
-                <button
-                  onClick={handleLogout}
-                  className="bg-red-50 text-red-600 border border-red-200 px-4 py-2 rounded-lg font-bold hover:bg-red-500 hover:text-white transition shadow-sm text-sm"
-                >
-                  Đăng xuất
-                </button>
-              </div>
-            ) : (
-              <Link
-                to="/auth"
-                className="bg-blue-600 text-white px-5 py-2 rounded-lg font-bold hover:bg-blue-700 transition"
-              >
-                Đăng nhập
-              </Link>
-            )}
-          </nav>
+                    <nav className="flex items-center gap-4 text-sm font-medium">
+                        {currentUser ? (
+                            <div className="flex items-center gap-4 border-l-2 pl-4 border-gray-200">
+                                <div className="hidden md:block">
+                                    <span className="text-gray-500">Xin chào, </span>
+                                    <span className="font-bold text-blue-700">{currentUser.username || currentUser.full_name || 'Khách hàng'}!</span>
+                                </div>
+                                
+                                {/* ✅ ĐÃ THÊM NÚT LỊCH SỬ ĐẶT TOUR Ở ĐÂY */}
+                                <Link to="/my-bookings" className="text-gray-600 hover:text-blue-600 font-bold px-2 flex items-center gap-1">
+                                    <span>✈️</span> Lịch sử đặt tour
+                                </Link>
+
+                                {currentUser.role === 'admin' && (
+                                    <Link to="/admin" className="text-gray-600 hover:text-blue-600 font-bold px-2">
+                                        ⚙️ Quản trị
+                                    </Link>
+                                )}
+
+                                <button 
+                                    onClick={handleLogout}
+                                    className="bg-red-50 text-red-600 border border-red-200 px-4 py-2 rounded-lg font-bold hover:bg-red-500 hover:text-white transition shadow-sm text-sm"
+                                >
+                                    Đăng xuất
+                                </button>
+                            </div>
+                        ) : (
+                            <Link 
+                                to="/auth"  
+                                className="bg-blue-600 text-white px-5 py-2 rounded-lg font-bold hover:bg-blue-700 transition shadow-md text-sm block text-center"
+                            >
+                                Đăng nhập
+                            </Link>
+                        )}
+                    </nav>
         </div>
       </header>
 
@@ -232,7 +242,7 @@ const TourDetailPage = () => {
               </div>
             </div>
 
-            <ReviewForm tourId={tour._id} />
+            {/* <ReviewForm tourId={tour._id} /> */}
           </div>
 
           {/* CỘT PHẢI: BẢNG GIÁ & BOOKING */}
@@ -299,9 +309,33 @@ const TourDetailPage = () => {
                 </div>
               </div>
 
-              {/* BOOKING FORM (Đã bao gồm chọn số lượng khách bên trong) */}
-              <div className="mt-4 border-t pt-6">
-                <BookingForm tour={tour} />
+              {/* KHU VỰC FORM ĐẶT VÉ & KIỂM TRA TRẠNG THÁI HẾT VÉ */}
+              <div className="mt-6 border-t pt-6">
+                {tour.available_seats <= 0 ? (
+                  // TÌNH HUỐNG 1: ĐÃ HẾT VÉ (Sold Out) -> Ẩn form, ẩn nút, hiện thông báo
+                  <div className="bg-[#f7ece3] border border-[#e8d6c8] p-5 rounded-xl text-center shadow-inner">
+                    <p className="text-[#a0522d] text-sm font-bold leading-relaxed">
+                      Hiện số chỗ của ngày khởi hành Quý khách tham khảo đang tạm kín chỗ. Vui lòng liên hệ với nhân viên.
+                    </p>
+                    <div className="mt-4 inline-block bg-white px-6 py-2 rounded-full border border-[#e8d6c8] text-[#a0522d] font-black text-sm shadow-sm">
+                      📞 Hotline: 1900 1234
+                    </div>
+                  </div>
+                ) : currentUser ? (
+                  // TÌNH HUỐNG 2: CÒN VÉ & ĐÃ ĐĂNG NHẬP -> Hiện Form của đồng đội
+                  <BookingForm tour={tour} />
+                ) : (
+                  // TÌNH HUỐNG 3: CÒN VÉ & CHƯA ĐĂNG NHẬP -> Bắt đăng nhập
+                  <button 
+                    onClick={() => {
+                      alert('🔒 Bạn chưa đăng nhập. Vui lòng đăng nhập để tiến hành đặt tour!');
+                      navigate('/auth', { state: { from: `/tours/${slug}` } });
+                    }}
+                    className="w-full py-4 bg-gray-400 hover:bg-gray-500 text-white font-black text-xl rounded-xl shadow-lg transition"
+                  >
+                    ĐĂNG NHẬP ĐỂ ĐẶT VÉ
+                  </button>
+                )}
               </div>
 
               <p className="text-center text-[11px] text-gray-400 mt-6 italic">

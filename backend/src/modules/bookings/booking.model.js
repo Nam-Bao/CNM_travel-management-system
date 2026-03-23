@@ -21,7 +21,11 @@ const bookingSchema = new mongoose.Schema({
         email: { type: String, required: true }
     },
     
-    createdAt: { type: Date, default: Date.now }
+    createdAt: { type: Date, default: Date.now },
+
+    status: { type: String, default: 'SUCCESS' }, // 'SUCCESS' hoặc 'CANCELED'
+    refund_percentage: { type: Number, default: 0 },
+    refund_amount: { type: Number, default: 0 }
 });
 
 module.exports = mongoose.model('Booking', bookingSchema);
