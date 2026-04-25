@@ -13,20 +13,11 @@ import AddTourPage from "./features/tours/pages/AddTourPage";
 import ManageToursPage from "./features/tours/pages/ManageToursPage";
 import EditTourPage from "./features/tours/pages/EditTourPage";
 import DashboardPage from "./features/admin/pages/DashboardPage";
-import TourDetailPage from "./features/tours/pages/TourDetailPage";
 import BookingHistory from "./features/bookings/pages/BookingHistory";
 import ManageBookings from './features/admin/pages/ManageBookings';
 import VnpayReturn from './features/bookings/pages/VnpayReturn';
 import BookingTour from "./features/bookings/pages/BookingTour";
 import MainLayout from "./components/layout/MainLayout";
-
-// Bookings - ✅ SỬA ĐƯỜNG DẪN Ở ĐÂY CHO THỊNH
-import BookingHistory from "./features/bookings/pages/BookingHistory";
-import CheckoutPage from "./features/bookings/pages/CheckoutPage"; // Khớp với thư mục bookings/pages
-
-// Admin & Users
-import DashboardPage from "./features/admin/pages/DashboardPage";
-import ManageBookings from "./features/admin/pages/ManageBookings";
 import ManageUsersPage from "./features/users/pages/ManageUsersPage";
 
 function App() {
