@@ -186,30 +186,6 @@ const BookingHistory = () => {
 
 
       {/* HEADER PAGE */}
-      <header className="bg-white shadow-sm sticky top-0 z-50 border-b mb-8 h-20 flex items-center">
-        <div className="max-w-7xl mx-auto px-4 w-full flex justify-between items-center">
-          <Link to="/" className="text-3xl font-extrabold text-blue-600 tracking-tighter">
-            Travel<span className="text-orange-500">oke</span>
-          </Link>
-          <nav className="flex items-center gap-6">
-            {/* ... (Giữ nguyên header cũ) ... */}
-            {currentUser ? (
-              <div className="flex items-center gap-4 bg-gray-50 p-1.5 pr-4 rounded-full border border-gray-100 shadow-sm">
-                <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold">
-                  {currentUser.full_name?.charAt(0) || 'U'}
-                </div>
-                <div className="hidden md:block leading-tight">
-                  <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Thành viên</p>
-                  <p className="text-sm font-bold text-gray-700">{currentUser.full_name}</p>
-                </div>
-                <button onClick={handleLogout} className="ml-2 text-red-500 hover:text-red-700 font-bold text-xs uppercase border-l pl-4 border-gray-200">
-                  Đăng xuất
-                </button>
-              </div>
-            ) : null}
-          </nav>
-        </div>
-      </header>
 
       {/* NỘI DUNG CHÍNH */}
       <div className="max-w-5xl mx-auto px-4">

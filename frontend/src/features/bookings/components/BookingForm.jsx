@@ -10,26 +10,28 @@ const BookingForm = ({ tour }) => {
     email: "",
   });
 
+  if (!tour) return null;
+
+  const today = new Date();
+  const startDate = new Date(tour.start_date);
+  const isTourEnded = today > startDate;
+
+  const formatPrice = (p) =>
+    new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(p || 0);
+
   const basePrice =
     (tour?.price?.adult || 0) * guestSize.adult +
     (tour?.price?.child || 0) * guestSize.child +
     (tour?.price?.infant || 0) * guestSize.infant;
 
-  const finalPrice = basePrice * (1 - (tour?.sale_percentage || 0) / 100);
+  const currentTotalSeats = guestSize.adult + guestSize.child + guestSize.infant;
 
   const handleUpdate = (type, op) => {
     setGuestSize((prev) => {
-      let val = op === "plus" ? prev[type] + 1 : prev[type] - 1;
-      if (type === "adult" && val < 1) val = 1;
-      if (type !== "adult" && val < 0) val = 0;
-
-      // Chặn cộng thêm nếu vượt quá chỗ trống (nếu tour có available_seats)
-      if (op === "plus" && tour.available_seats) {
-        const totalRequest = prev.adult + prev.child + prev.infant + 1;
-        if (totalRequest > tour.available_seats) {
-          alert(
-            `Rất tiếc, tour này chỉ còn ${tour.available_seats} chỗ trống!`,
-          );
+      let val = prev[type];
+      if (op === "plus") {
+        if (currentTotalSeats >= tour.available_seats) {
+          alert(`Rất tiếc! Tour chỉ còn đúng ${tour.available_seats} chỗ trống.`);
           return prev;
         }
       }
@@ -37,25 +39,59 @@ const BookingForm = ({ tour }) => {
     });
   };
 
-  const handleGoToCheckout = (e) => {
+  // ✅ LOGIC MỚI: KIỂM TRA LỖI (VALIDATE) VÀ CHUYỂN TRANG
+  const handleProceedToCheckout = (e) => {
     e.preventDefault();
-    if (!contactInfo.fullName || !contactInfo.phone || !contactInfo.email)
-      return alert(
-        "Thịnh ơi, vui lòng nhập đủ thông tin để mình đặt tour nhé!",
-      );
 
-    // Đẩy dữ liệu sang trang Thanh toán (/checkout)
-    navigate("/checkout", {
+    // 1. Kiểm tra rỗng
+    if (!contactInfo.full_name.trim() || !contactInfo.phone.trim() || !contactInfo.email.trim()) {
+      return alert("Vui lòng điền đầy đủ thông tin liên hệ!");
+    }
+
+    // 2. Validate Số điện thoại (Định dạng VN: 10 số, bắt đầu bằng 03,05,07,08,09)
+    const phoneRegex = /^(0[3|5|7|8|9])+([0-9]{8})$/;
+    if (!phoneRegex.test(contactInfo.phone.trim())) {
+      return alert("Số điện thoại bắt đầu bằng (03,05,07,08,09)! Vui lòng nhập đúng.");
+    }
+
+    // 3. Validate Email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(contactInfo.email.trim())) {
+      return alert("Địa chỉ Email không hợp lệ!");
+    }
+
+    // 4. Kiểm tra sức chứa
+    if (currentTotalSeats > tour.available_seats) {
+        return alert(`Số lượng khách vượt quá số chỗ còn trống (${tour.available_seats} vé).`);
+    }
+
+    const token = localStorage.getItem('token');
+    if (!token) {
+        return alert("Vui lòng đăng nhập để tiến hành đặt tour!");
+    }
+
+    // ✅ Gói dữ liệu chuyển sang trang Xác nhận thanh toán
+    navigate('/booking-tour', {
       state: {
-        bookingData: {
-          ...guestSize,
-          ...contactInfo,
-          total: finalPrice,
-        },
-        tour: tour,
-      },
+        tour,
+        guestSize,
+        contactInfo,
+        finalPrice
+      }
     });
   };
+
+  if (isTourEnded) {
+    return (
+      <div className="mt-6 bg-gray-50 border border-gray-200 rounded-2xl p-8 text-center shadow-inner">
+        <span className="text-5xl block mb-4 opacity-50 grayscale">⏳</span>
+        <h3 className="text-xl font-black text-gray-600 uppercase tracking-widest">Tour Đã Kết Thúc</h3>
+        <p className="text-sm text-gray-500 mt-3 leading-relaxed">
+          Chuyến đi này đã khởi hành. Bạn không thể đặt vé nữa.<br />Vui lòng chọn một lịch trình khác nhé!
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -64,71 +100,64 @@ const BookingForm = ({ tour }) => {
       </h4>
 
       {["adult", "child", "infant"].map((t) => (
-        <div
-          key={t}
-          className="flex justify-between items-center bg-gray-50 p-3 rounded-xl border border-gray-100 shadow-sm transition-all hover:bg-white"
-        >
-          <span className="text-[10px] font-black uppercase text-gray-500">
+        <div key={t} className="flex justify-between items-center bg-gray-50 p-2 rounded-lg">
+          <span className="text-sm uppercase font-semibold">
             {t === "adult" ? "Người lớn" : t === "child" ? "Trẻ em" : "Em bé"}
           </span>
           <div className="flex items-center gap-4">
             <button
               type="button"
               onClick={() => handleUpdate(t, "minus")}
-              className="w-8 h-8 rounded-full border bg-white font-bold text-gray-400 hover:text-blue-600 hover:border-blue-600 transition-colors"
-            >
-              {" "}
-              -{" "}
-            </button>
-            <span className="font-black text-sm text-blue-900 w-4 text-center">
-              {guestSize[t]}
-            </span>
+              disabled={(t === 'adult' && guestSize.adult <= 1) || (t !== 'adult' && guestSize[t] <= 0)}
+              className="w-8 h-8 border rounded-full bg-white font-bold text-gray-600 hover:bg-gray-200 disabled:opacity-30 disabled:cursor-not-allowed transition"
+            >-</button>
+            <span className="font-bold w-4 text-center">{guestSize[t]}</span>
             <button
               type="button"
               onClick={() => handleUpdate(t, "plus")}
-              className="w-8 h-8 rounded-full border bg-white font-bold text-gray-400 hover:text-blue-600 hover:border-blue-600 transition-colors"
-            >
-              {" "}
-              +{" "}
-            </button>
+              disabled={currentTotalSeats >= tour.available_seats}
+              className="w-8 h-8 border rounded-full bg-white font-bold text-gray-600 hover:bg-gray-200 disabled:opacity-30 disabled:cursor-not-allowed transition"
+            >+</button>
           </div>
         </div>
       ))}
 
       <div className="space-y-3 pt-2">
         <input
-          className="w-full p-3 bg-gray-50 border border-gray-100 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-blue-100 outline-none transition-all font-medium"
-          placeholder="Họ tên khách hàng *"
-          value={contactInfo.fullName}
-          onChange={(e) =>
-            setContactInfo({ ...contactInfo, fullName: e.target.value })
-          }
+          className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none"
+          placeholder="Họ tên *"
+          value={contactInfo.full_name}
+          onChange={(e) => setContactInfo({ ...contactInfo, full_name: e.target.value })}
         />
         <input
-          className="w-full p-3 bg-gray-50 border border-gray-100 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-blue-100 outline-none transition-all font-medium"
-          placeholder="Số điện thoại liên hệ *"
+          className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none"
+          placeholder="Số điện thoại *"
           value={contactInfo.phone}
-          onChange={(e) =>
-            setContactInfo({ ...contactInfo, phone: e.target.value })
-          }
+          onChange={(e) => setContactInfo({ ...contactInfo, phone: e.target.value })}
         />
         <input
-          className="w-full p-3 bg-gray-50 border border-gray-100 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-blue-100 outline-none transition-all font-medium"
-          placeholder="Email nhận vé điện tử *"
+          className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none"
+          placeholder="Email liên hệ *"
           value={contactInfo.email}
-          onChange={(e) =>
-            setContactInfo({ ...contactInfo, email: e.target.value })
-          }
+          onChange={(e) => setContactInfo({ ...contactInfo, email: e.target.value })}
         />
       </div>
-
-      <div className="pt-4 border-t border-dashed flex justify-between items-center">
-        <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
-          Tạm tính:
-        </span>
-        <span className="text-2xl font-black text-red-600 tracking-tighter italic">
-          {new Intl.NumberFormat("vi-VN").format(finalPrice)} ₫
-        </span>
+      <div className="pt-4 border-t border-dashed">
+        <div className="flex justify-between items-end mb-4">
+          <span className="text-sm font-bold text-gray-500">Tạm tính:</span>
+          <div className="text-right">
+            {salePercentage > 0 && <p className="text-xs text-gray-400 line-through">{formatPrice(basePrice)}</p>}
+            <p className="text-2xl font-black text-blue-700">{formatPrice(finalPrice)}</p>
+          </div>
+        </div>
+        
+        <button
+          onClick={handleProceedToCheckout}
+          disabled={currentTotalSeats > tour.available_seats}
+          className="w-full py-3.5 bg-blue-600 text-white font-black text-lg rounded-xl active:scale-95 transition-all shadow-lg hover:bg-blue-700"
+        >
+          TIẾP TỤC THANH TOÁN ➔
+        </button>
       </div>
 
       <button

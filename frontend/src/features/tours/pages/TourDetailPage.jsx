@@ -211,20 +211,8 @@ const TourDetailPage = () => {
   };
 
   return (
-    <div className="bg-[#f4f7f9] min-h-screen pb-20 font-sans text-gray-800">
-      <header className="bg-white shadow-md border-b sticky top-0 z-50 h-20 flex items-center">
-        <div className="max-w-7xl mx-auto px-4 w-full flex justify-between items-center">
-          <Link
-            to="/"
-            className="text-3xl font-black text-blue-600 tracking-tighter"
-          >
-            Travel<span className="text-orange-500">oke</span>
-          </Link>
-          <div className="hidden md:block text-[10px] font-black uppercase text-gray-400 tracking-widest border-l-2 pl-4 border-gray-100">
-            Trang chủ / {tour.title}
-          </div>
-        </div>
-      </header>
+    <div className="bg-gray-50 min-h-screen pb-20 flex flex-col">
+      {/* Header */}
 
       <main className="max-w-7xl mx-auto px-4 py-10">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">

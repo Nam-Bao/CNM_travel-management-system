@@ -12,6 +12,7 @@ const tourRoutes = require("./modules/tours/tour.route");
 const userRoutes = require("./modules/users/user.route");
 const bookingRoutes = require("./modules/bookings/booking.route");
 const reviewRoutes = require("./modules/reviews/review.route");
+const paymentRoutes = require('./modules/payment/vnpay.route');
 
 const app = express();
 
@@ -26,6 +27,7 @@ app.use("/api/tours", tourRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/bookings", bookingRoutes);
 app.use("/api/reviews", reviewRoutes);
+app.use('/api/payment', paymentRoutes);
 
 // Test API gốc
 app.get("/", (req, res) => {
