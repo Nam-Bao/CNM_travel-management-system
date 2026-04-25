@@ -12,6 +12,13 @@ import TourDetailPage from "./features/tours/pages/TourDetailPage";
 import AddTourPage from "./features/tours/pages/AddTourPage";
 import ManageToursPage from "./features/tours/pages/ManageToursPage";
 import EditTourPage from "./features/tours/pages/EditTourPage";
+import DashboardPage from "./features/admin/pages/DashboardPage";
+import TourDetailPage from "./features/tours/pages/TourDetailPage";
+import BookingHistory from "./features/bookings/pages/BookingHistory";
+import ManageBookings from './features/admin/pages/ManageBookings';
+import VnpayReturn from './features/bookings/pages/VnpayReturn';
+import BookingTour from "./features/bookings/pages/BookingTour";
+import MainLayout from "./components/layout/MainLayout";
 
 // Bookings - ✅ SỬA ĐƯỜNG DẪN Ở ĐÂY CHO THỊNH
 import BookingHistory from "./features/bookings/pages/BookingHistory";
@@ -26,16 +33,21 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* --- KHÁCH HÀNG --- */}
-        <Route path="/" element={<HomePage />} />
-        <Route path="/tours/:slug" element={<TourDetailPage />} />
+        <Route element={<MainLayout />}>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/tours/:slug" element={<TourDetailPage />} />
+          <Route path="/my-bookings" element={<BookingHistory />} />
+          <Route path="/booking-tour" element={<BookingTour />} />
+          <Route path="/vnpay-return" element={<VnpayReturn />} />
+          {/* Có thể tạo thêm các trang /tours, /about, /contact nhét vào đây sau */}
+        </Route>
+
+        {/* ========================================================
+            NHÓM GIAO DIỆN TRỐNG (Không có Header/Footer) 
+        ======================================================== */}
         <Route path="/auth" element={<AuthPage />} />
         <Route path="/login" element={<AuthPage />} />
         <Route path="/register" element={<AuthPage />} />
-
-        {/* Route thanh toán & lịch sử */}
-        <Route path="/checkout" element={<CheckoutPage />} />
-        <Route path="/my-bookings" element={<BookingHistory />} />
 
         {/* --- ADMIN (CÓ BẢO VỆ) --- */}
         <Route element={<ProtectedRoute allowedRoles={["admin"]} />}>
