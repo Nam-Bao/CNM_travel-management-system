@@ -1,192 +1,258 @@
-import React, { useState } from "react";
-import { useLocation, useNavigate, Link } from "react-router-dom";
+import React, { useState, useEffect, useMemo } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import bookingApi from "../api/bookingApi";
-import axios from "axios";
 
 const BookingTour = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { tour, guestSize, contactInfo, finalPrice } = location.state || {};
+  const { tour, guestSize, contactInfo, tourPrice } = location.state || {};
 
-  // Nếu người dùng gõ URL trực tiếp mà không qua form, đẩy về trang chủ
-  if (!tour) {
-    navigate("/");
-    return null;
-  }
-
-  const [paymentPercent, setPaymentPercent] = useState(100); // 100 hoặc 50
-  const [paymentMethod, setPaymentMethod] = useState("VNPAY"); // VNPAY hoặc CASH
-  const [agreeTerms, setAgreeTerms] = useState(false);
+  const [selectedBeds, setSelectedBeds] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  const amountToPay = (finalPrice * paymentPercent) / 100;
+  const totalGuests = Number(guestSize?.adult || 0) + Number(guestSize?.child || 0) + Number(guestSize?.infant || 0);
+  
+  // 1. KIỂM TRA LOẠI TOUR CHUẨN XÁC (Bắt cả vehicle_type lẫn transportType đề phòng DB đặt sai tên)
+  const isDomestic = tour?.tour_type === "domestic";
+  const isInternational = tour?.tour_type === "international";
+ const isBedBus = true;
+  const isSeatBus = false;
 
-  const formatPrice = (p) =>
-    new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(p || 0);
+// 2. TỰ ĐỘNG SINH DỮ LIỆU NẾU DATABASE RỖNG
+// 2. ÉP BUỘC SINH 30 GHẾ (BỎ QUA DATABASE ĐỂ TEST UI CHO ĐẸP)
+  const { tangDuoi, tangTren, seatBusBeds, allBeds } = useMemo(() => {
+    
+    // HACK: Ép tạo ra luôn 30 ghế, không thèm nhìn Database nữa
+    let beds = Array.from({ length: 30 }, (_, i) => ({
+      code: `A${i + 1}`,
+      type: "single", // Đơn
+      isBooked: false
+    }));
 
-  const handleSubmitPayment = async () => {
-    if (!agreeTerms) {
-      return alert("Bạn cần đồng ý với các Điều khoản & Chính sách trước khi thanh toán.");
+    if (isBedBus) {
+      const half = Math.ceil(beds.length / 2); // 30 chia 2 = 15 chẵn mỗi tầng
+      return { tangDuoi: beds.slice(0, half), tangTren: beds.slice(half), seatBusBeds: [], allBeds: beds };
+    } else if (isSeatBus) {
+      return { tangDuoi: [], tangTren: [], seatBusBeds: beds, allBeds: beds };
     }
+    return { tangDuoi: [], tangTren: [], seatBusBeds: [], allBeds: [] };
+  }, [tour, isBedBus, isSeatBus]);
 
+  
+  const handleBooking = async () => {
+    if (isDomestic && selectedBeds.length !== totalGuests) return;
+    
     setLoading(true);
     try {
-      const token = localStorage.getItem("token");
-      
-      // 1. Tạo đơn hàng vào Database (Trạng thái mặc định là PENDING)
-      const payload = {
-        tourId: tour._id,
-        guest_size: guestSize,
-        contact_info: contactInfo,
-        payment_method: paymentMethod // Gửi phương thức vào DB
-      };
-      
-      const bookingRes = await bookingApi.createBooking(payload);
-      const newBooking = bookingRes.data?.data || bookingRes.data;
-
-      // 2. Xử lý tùy theo Phương thức thanh toán
-      if (paymentMethod === "VNPAY") {
-        // GỌI VNPAY
-        const vnpayRes = await axios.post(
-          "http://localhost:5000/api/payment/vnpay/create_payment_url",
-          {
-            amount: amountToPay, // Thanh toán 50% hoặc 100% tùy chọn
-            bookingId: newBooking._id,
-            bankCode: "NCB",
-          },
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-
-        if (vnpayRes.data && vnpayRes.data.url) {
-          window.location.href = vnpayRes.data.url;
-        } else {
-          alert("Lỗi khởi tạo cổng VNPay.");
-          setLoading(false);
-        }
-      } else {
-        // TIỀN MẶT - Đẩy thẳng về trang lịch sử
-        alert("🎉 Đặt chỗ thành công! Vui lòng thanh toán tại văn phòng trước ngày khởi hành 7 ngày.");
-        navigate("/my-bookings");
-      }
-    } catch (err) {
-      alert(err.response?.data?.message || "Lỗi xử lý giao dịch!");
+      await bookingApi.createBooking({ 
+        tourId: tour._id, 
+        selected_beds: isDomestic ? selectedBeds : [], 
+        guest_size: guestSize, 
+        contact_info: contactInfo 
+      });
+      navigate("/my-bookings");
+    } catch (e) {
+      alert(e.response?.data?.message || "Lỗi đặt tour: Database Backend chưa khớp số ghế.");
+    } finally {
       setLoading(false);
     }
   };
 
+  const handleSelectSeat = (code) => {
+    if (selectedBeds.includes(code)) {
+      setSelectedBeds(selectedBeds.filter(x => x !== code));
+    } else if (selectedBeds.length < totalGuests) {
+      setSelectedBeds([...selectedBeds, code]);
+    }
+  };
+
+  if (!tour) return null;
+
   return (
-    <div className="bg-gray-50 min-h-screen pb-20 font-sans">
-      <header className="bg-white shadow-sm h-20 flex items-center border-b">
-        <div className="max-w-6xl mx-auto px-4 w-full flex justify-between">
-          <Link to={`/tours/${tour.slug}`} className="text-gray-500 hover:text-blue-600 font-bold">
-            ← Quay lại trang chi tiết
-          </Link>
-          <span className="font-black text-xl text-gray-800">Xác nhận thanh toán</span>
-          <div className="w-20"></div> {/* Spacer để cân bằng Header */}
-        </div>
-      </header>
-
-      <div className="max-w-6xl mx-auto px-4 mt-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
+    <div className="bg-gray-50 min-h-screen pb-32 font-sans">
+      <div className="max-w-4xl mx-auto bg-white min-h-screen shadow-sm border-x">
         
-        {/* CỘT TRÁI: THÔNG TIN ĐƠN HÀNG */}
-        <div className="lg:col-span-2 space-y-6">
-          <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-            <h2 className="text-xl font-black text-blue-700 border-b pb-3 mb-4">1. Thông Tin Chuyến Đi</h2>
-            <div className="flex gap-4">
-              <img src={tour.images?.[0] || "https://placehold.co/150"} alt="tour" className="w-32 h-24 object-cover rounded-xl" />
-              <div>
-                <h3 className="font-bold text-gray-800 text-lg leading-tight">{tour.title}</h3>
-                <p className="text-sm text-gray-500 mt-2">📅 Khởi hành: <span className="font-bold text-gray-800">{new Date(tour.start_date).toLocaleDateString("vi-VN")}</span></p>
-                <div className="mt-2 flex gap-3 text-sm font-semibold text-gray-600 bg-blue-50 px-3 py-1.5 rounded-lg w-fit">
-                  <span>👤 Lớn: {guestSize.adult}</span>
-                  <span>👶 Trẻ: {guestSize.child}</span>
-                  <span>🍼 Em bé: {guestSize.infant}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-            <h2 className="text-xl font-black text-blue-700 border-b pb-3 mb-4">2. Thông Tin Liên Hệ</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="bg-gray-50 p-3 rounded-lg border">
-                <p className="text-xs text-gray-400 font-bold uppercase">Họ và tên</p>
-                <p className="font-semibold text-gray-800">{contactInfo.full_name}</p>
-              </div>
-              <div className="bg-gray-50 p-3 rounded-lg border">
-                <p className="text-xs text-gray-400 font-bold uppercase">Số điện thoại</p>
-                <p className="font-semibold text-gray-800">{contactInfo.phone}</p>
-              </div>
-              <div className="bg-gray-50 p-3 rounded-lg border md:col-span-2">
-                <p className="text-xs text-gray-400 font-bold uppercase">Email</p>
-                <p className="font-semibold text-gray-800">{contactInfo.email}</p>
-              </div>
-            </div>
-            <p className="text-[11px] text-red-500 mt-3 italic">* Vui lòng kiểm tra kỹ thông tin liên lạc để nhận vé điện tử.</p>
-          </div>
+        <div className="p-4 border-b">
+           <button 
+             onClick={() => {
+                navigate(`/tours/${tour.slug}`, { state: { returnedData: { guestSize, contactInfo } } });
+             }} 
+             className="text-blue-600 font-bold hover:underline flex items-center gap-1"
+           >
+             ← Quay lại chỉnh sửa
+           </button>
         </div>
 
-        {/* CỘT PHẢI: THANH TOÁN */}
-        <div className="space-y-6">
-          <div className="bg-white p-6 rounded-2xl shadow-xl border-t-4 border-orange-500 sticky top-24">
-            <h2 className="text-xl font-black text-gray-800 mb-4">Mức Thanh Toán</h2>
+        <div className="p-8">
+          <div className="flex justify-center items-center space-x-2 md:space-x-4 mb-10 text-xs md:text-sm">
+            <div className="flex items-center text-blue-600 font-bold">
+              <span className="w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center mr-2">1</span> {isInternational ? "Xác nhận" : "Chọn chỗ"}
+            </div>
+            <div className="w-8 md:w-16 h-px bg-gray-300"></div>
+            <div className="flex items-center text-gray-400">
+              <span className="w-6 h-6 rounded-full bg-gray-300 text-white flex items-center justify-center mr-2">2</span> Thanh toán
+            </div>
+          </div>
+
+          {isDomestic && (
+             <div className="flex justify-center gap-6 mb-10 text-xs md:text-sm text-gray-600">
+               <div className="flex items-center gap-2">
+                 <div className="w-5 h-7 border-2 border-gray-300 rounded bg-white"></div> Còn trống
+               </div>
+               <div className="flex items-center gap-2">
+                 <div className="w-5 h-7 border-2 border-gray-200 rounded bg-gray-200 flex items-center justify-center text-gray-400 font-black text-[10px]">X</div> Đã bán
+               </div>
+               <div className="flex items-center gap-2">
+                 <div className="w-5 h-7 border-2 border-green-500 rounded bg-green-500 flex items-center justify-center text-white font-black text-[10px]">✓</div> Đang chọn
+               </div>
+             </div>
+          )}
+
+          {/* =========================================
+              HIỂN THỊ: XE GIƯỜNG NẰM (GIƯỜNG ĐÔI/ĐƠN)
+              ========================================= */}
+          {isBedBus && (
+            <div className="flex flex-col md:flex-row justify-center gap-10 md:gap-20">
+              <div className="flex flex-col items-center">
+                <h4 className="font-bold mb-4 text-gray-700">Tầng dưới</h4>
+                <div className="bg-gray-100 p-6 rounded-t-[60px] rounded-b-[20px] w-64 shadow-inner border border-gray-200">
+                  <div className="flex justify-center mb-6">
+                     <div className="w-8 h-8 rounded-full border-4 border-gray-300 flex items-center justify-center">
+                        <div className="w-2 h-2 bg-gray-300 rounded-full"></div>
+                     </div>
+                  </div>
+                  <div className="grid grid-cols-3 gap-x-4 gap-y-4">
+                    {tangDuoi.map(bed => (
+                      <button
+                        key={bed.code} disabled={bed.isBooked} onClick={() => handleSelectSeat(bed.code)}
+                        className={`relative w-12 h-16 mx-auto rounded-lg border-2 flex flex-col items-center justify-center transition-all ${
+                          bed.isBooked ? 'bg-gray-200 border-gray-200 text-gray-400 cursor-not-allowed' : selectedBeds.includes(bed.code) ? 'bg-green-500 border-green-500 text-white shadow-md' : 'bg-white border-gray-300 text-gray-700 hover:border-green-400'
+                        }`}
+                      >
+                        {bed.isBooked ? <span className="text-xl font-black opacity-50">X</span> : (
+                          <>
+                            <span className="text-[11px] font-bold">{bed.code}</span>
+                            <span className={`text-[7px] uppercase font-bold opacity-80 mt-0.5 ${bed.type === 'double' ? 'text-orange-600' : 'text-blue-500'}`}>
+                              {bed.type === 'double' ? 'Đôi' : 'Đơn'}
+                            </span>
+                          </>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex flex-col items-center">
+                <h4 className="font-bold mb-4 text-gray-700">Tầng trên</h4>
+                <div className="bg-gray-100 p-6 rounded-t-[60px] rounded-b-[20px] w-64 shadow-inner border border-gray-200">
+                  <div className="flex justify-center mb-6"><div className="w-8 h-8"></div></div>
+                  <div className="grid grid-cols-3 gap-x-4 gap-y-4">
+                    {tangTren.map(bed => (
+                      <button
+                        key={bed.code} disabled={bed.isBooked} onClick={() => handleSelectSeat(bed.code)}
+                        className={`relative w-12 h-16 mx-auto rounded-lg border-2 flex flex-col items-center justify-center transition-all ${
+                          bed.isBooked ? 'bg-gray-200 border-gray-200 text-gray-400 cursor-not-allowed' : selectedBeds.includes(bed.code) ? 'bg-green-500 border-green-500 text-white shadow-md' : 'bg-white border-gray-300 text-gray-700 hover:border-green-400'
+                        }`}
+                      >
+                        {bed.isBooked ? <span className="text-xl font-black opacity-50">X</span> : (
+                          <>
+                            <span className="text-[11px] font-bold">{bed.code}</span>
+                            <span className={`text-[7px] uppercase font-bold opacity-80 mt-0.5 ${bed.type === 'double' ? 'text-orange-600' : 'text-blue-500'}`}>
+                              {bed.type === 'double' ? 'Đôi' : 'Đơn'}
+                            </span>
+                          </>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* =========================================
+              HIỂN THỊ: XE GHẾ NGỒI (A1 -> A29)
+              ========================================= */}
+          {isSeatBus && (
+            <div className="flex flex-col items-center">
+              <h4 className="font-bold mb-4 text-gray-700">Sơ đồ xe (29 chỗ ngồi)</h4>
+              <div className="bg-gray-100 p-6 rounded-t-[60px] rounded-b-[20px] max-w-sm w-full shadow-inner border border-gray-200">
+                <div className="flex justify-between items-center mb-6 px-4">
+                   <span className="text-xs font-bold text-gray-400">Cửa lên</span>
+                   <div className="w-8 h-8 rounded-full border-4 border-gray-300 flex items-center justify-center">
+                      <div className="w-2 h-2 bg-gray-300 rounded-full"></div>
+                   </div>
+                </div>
+                <div className="grid grid-cols-4 gap-x-2 gap-y-4">
+                  {seatBusBeds.map(bed => (
+                    <button
+                      key={bed.code} disabled={bed.isBooked} onClick={() => handleSelectSeat(bed.code)}
+                      className={`relative w-12 h-14 mx-auto rounded-lg border-2 flex flex-col items-center justify-center transition-all ${
+                        bed.isBooked ? 'bg-gray-200 border-gray-200 text-gray-400 cursor-not-allowed' : selectedBeds.includes(bed.code) ? 'bg-green-500 border-green-500 text-white shadow-md' : 'bg-white border-gray-300 text-gray-700 hover:border-green-400'
+                      }`}
+                    >
+                      {bed.isBooked ? <span className="text-xl font-black opacity-50">X</span> : (
+                        <span className="text-[11px] font-bold">{bed.code}</span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* HIỂN THỊ: MÁY BAY */}
+          {isInternational && (
+            <div className="flex flex-col items-center justify-center py-16 px-6 bg-blue-50 rounded-3xl border border-blue-100 text-center mx-4 shadow-sm">
+               <span className="text-6xl mb-6 block animate-bounce">✈️</span>
+               <h3 className="text-2xl md:text-3xl font-black text-blue-800 uppercase mb-4 tracking-tight">Xác Nhận Đơn Hàng Quốc Tế</h3>
+               <p className="text-gray-600 font-medium max-w-lg leading-relaxed">
+                 Đối với tour di chuyển bằng máy bay, hệ thống không hỗ trợ chọn ghế trước. Vị trí ghế ngồi sẽ được hãng hàng không sắp xếp tự động khi Quý khách làm thủ tục check-in tại sân bay.
+               </p>
+               <p className="mt-6 text-sm font-bold text-blue-600 bg-blue-100 py-2 px-4 rounded-lg inline-block">
+                 Quý khách vui lòng bấm "Tiếp tục" bên dưới để thanh toán.
+               </p>
+            </div>
+          )}
+
+        </div>
+      </div>
+
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t p-4 shadow-[0_-10px_15px_-3px_rgba(0,0,0,0.05)] z-50">
+        <div className="max-w-4xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
+          <div className="text-sm">
+            {isDomestic ? (
+              <>
+                Số chỗ: {" "}
+                {selectedBeds.length > 0 ? (
+                  <span className="font-bold text-gray-800">{selectedBeds.join(', ')}</span>
+                ) : (
+                  <span className="text-gray-500 font-medium">Vui lòng chọn đủ {totalGuests} chỗ</span>
+                )}
+              </>
+            ) : (
+              <span className="font-bold text-gray-500 italic">Áp dụng chính sách bay tự động</span>
+            )}
+          </div>
+          
+          <div className="flex items-center gap-6 w-full md:w-auto justify-between md:justify-end">
+            <div className="text-right flex items-center gap-2">
+              <span className="text-sm text-gray-600">Tổng cộng:</span>
+              <span className="text-xl md:text-2xl font-black text-blue-600">
+                {new Intl.NumberFormat('vi-VN').format(totalPrice)} đ
+              </span>
+            </div>
             
-            <div className="space-y-3 mb-6">
-              <label className={`flex items-center justify-between p-4 border rounded-xl cursor-pointer transition ${paymentPercent === 100 ? 'border-orange-500 bg-orange-50/50' : 'hover:bg-gray-50'}`}>
-                <div className="flex items-center gap-3">
-                  <input type="radio" name="percent" className="w-5 h-5 accent-orange-500" checked={paymentPercent === 100} onChange={() => setPaymentPercent(100)} />
-                  <span className="font-bold text-gray-700">Thanh toán 100%</span>
-                </div>
-                <span className="font-black text-orange-600">{formatPrice(finalPrice)}</span>
-              </label>
-
-              <label className={`flex items-center justify-between p-4 border rounded-xl cursor-pointer transition ${paymentPercent === 50 ? 'border-orange-500 bg-orange-50/50' : 'hover:bg-gray-50'}`}>
-                <div className="flex items-center gap-3">
-                  <input type="radio" name="percent" className="w-5 h-5 accent-orange-500" checked={paymentPercent === 50} onChange={() => setPaymentPercent(50)} />
-                  <span className="font-bold text-gray-700">Đặt cọc 50%</span>
-                </div>
-                <span className="font-black text-orange-600">{formatPrice(finalPrice / 2)}</span>
-              </label>
-            </div>
-
-            <h2 className="text-xl font-black text-gray-800 mb-4 border-t pt-4">Hình Thức Thanh Toán</h2>
-            <div className="space-y-3 mb-6">
-              <label className={`flex items-center p-3 border rounded-xl cursor-pointer transition ${paymentMethod === 'VNPAY' ? 'border-blue-500 bg-blue-50/50' : 'hover:bg-gray-50'}`}>
-                <input type="radio" name="method" className="w-5 h-5 accent-blue-600 mr-3" checked={paymentMethod === 'VNPAY'} onChange={() => setPaymentMethod("VNPAY")} />
-                <div>
-                  <p className="font-bold text-gray-700">Thanh toán trực tuyến VNPay</p>
-                  <p className="text-xs text-gray-500">Hỗ trợ thẻ ATM, Visa, MasterCard, QR Code</p>
-                </div>
-              </label>
-
-              <label className={`flex items-center p-3 border rounded-xl cursor-pointer transition ${paymentMethod === 'CASH' ? 'border-blue-500 bg-blue-50/50' : 'hover:bg-gray-50'}`}>
-                <input type="radio" name="method" className="w-5 h-5 accent-blue-600 mr-3" checked={paymentMethod === 'CASH'} onChange={() => setPaymentMethod("CASH")} />
-                <div>
-                  <p className="font-bold text-gray-700">Thanh toán Tiền mặt</p>
-                  <p className="text-xs text-gray-500">Giữ chỗ. Thanh toán tại văn phòng trước 7 ngày khởi hành.</p>
-                </div>
-              </label>
-            </div>
-
-            <div className="bg-gray-50 p-4 rounded-xl border border-gray-200 mb-6">
-              <label className="flex items-start gap-3 cursor-pointer">
-                <input type="checkbox" className="mt-1 w-4 h-4 accent-blue-600" checked={agreeTerms} onChange={(e) => setAgreeTerms(e.target.checked)} />
-                <span className="text-xs text-gray-600 leading-relaxed">
-                  Tôi đã đọc và đồng ý với <a href="#" className="text-blue-600 hover:underline">Điều khoản đặt tour</a> và <a href="#" className="text-blue-600 hover:underline">Chính sách hoàn hủy</a> của Traveloke.
-                </span>
-              </label>
-            </div>
-
-            <button
-              onClick={handleSubmitPayment}
-              disabled={loading || !agreeTerms}
-              className="w-full py-4 bg-blue-600 text-white font-black text-xl rounded-xl active:scale-95 transition-all disabled:bg-gray-300 disabled:cursor-not-allowed shadow-lg hover:bg-blue-700 flex justify-center items-center"
+            <button 
+              disabled={isButtonDisabled}
+              onClick={handleBooking}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg font-bold transition-all disabled:bg-gray-300 disabled:cursor-not-allowed"
             >
-              {loading ? <span className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full"></span> : `THANH TOÁN ${formatPrice(amountToPay)}`}
+              {loading ? "Đang xử lý..." : "Tiếp tục"}
             </button>
           </div>
         </div>
-
       </div>
     </div>
   );

@@ -1,4 +1,5 @@
 import React from "react";
+import { Link } from "react-router-dom";
 
 const Footer = () => {
   return (
@@ -21,9 +22,21 @@ const Footer = () => {
         <div>
           <h3 className="text-lg font-bold text-white mb-4">Chính Sách</h3>
           <ul className="text-sm space-y-2">
-            <li><a href="#" className="hover:text-white transition">Điều khoản sử dụng</a></li>
-            <li><a href="#" className="hover:text-white transition">Chính sách bảo mật</a></li>
-            <li><a href="#" className="hover:text-white transition">Chính sách hoàn hủy</a></li>
+            <li>
+              <Link to="/terms" className="hover:text-white transition">
+                Điều khoản sử dụng
+              </Link>
+            </li>
+            <li>
+              <Link to="/privacy" className="hover:text-white transition">
+                Chính sách bảo mật
+              </Link>
+            </li>
+            <li>
+              <Link to="/cancellation-policy" className="hover:text-white transition">
+                Chính sách hoàn hủy
+              </Link>
+            </li>
           </ul>
         </div>
       </div>

@@ -1,0 +1,30 @@
+[
+  {
+    "id": "h1",
+    "name": "Vinpearl Luxury",
+    "image": "https://bit.ly/3UE6WvH",
+    "price_per_night": 2500000,
+    "star": 5
+  },
+  {
+    "id": "h2",
+    "name": "Mường Thanh Grand",
+    "image": "https://bit.ly/3QCzY1H",
+    "price_per_night": 1200000,
+    "star": 4
+  },
+  {
+    "id": "h3",
+    "name": "Pullman Hotel",
+    "image": "https://bit.ly/3WhfGj3",
+    "price_per_night": 3000000,
+    "star": 5
+  },
+  {
+    "id": "h4",
+    "name": "Novotel Saigon",
+    "image": "https://bit.ly/3JInYpM",
+    "price_per_night": 1800000,
+    "star": 4
+  }
+]
