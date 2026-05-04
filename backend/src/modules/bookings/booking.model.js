@@ -39,6 +39,9 @@ const bookingSchema = new mongoose.Schema({
     email: { type: String, required: true },
   },
 
+  payment_percent: { type: Number, default: 100 },
+  payment_method: { type: String, default: "VNPAY" },
+
   refund_percentage: { type: Number, default: 0 },
   refund_amount: { type: Number, default: 0 },
 

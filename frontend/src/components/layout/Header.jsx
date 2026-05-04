@@ -55,7 +55,7 @@ const Header = () => {
             to="/hotels"
             className="hover:text-blue-600 transition flex items-center gap-1"
           >
-            <span className="text-lg">🏨</span> Khách sạn
+            Khách sạn
           </Link>
 
           <Link to="/tours" className="hover:text-blue-600 transition">
@@ -63,9 +63,6 @@ const Header = () => {
           </Link>
           <Link to="/about" className="hover:text-blue-600 transition">
             Về chúng tôi
-          </Link>
-          <Link to="/contact" className="hover:text-blue-600 transition">
-            Liên hệ
           </Link>
         </nav>
 

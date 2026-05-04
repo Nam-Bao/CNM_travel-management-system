@@ -191,10 +191,10 @@ const HomePage = () => {
                             {/* SẮP XẾP */}
                             <div className="w-full md:w-64 relative">
                                 <select 
-                                    value={sortType}
-                                    onChange={(e) => setSortType(e.target.value)}
-                                    className="w-full px-4 py-3.5 rounded-xl text-white outline-none bg-gradient-to-r from-blue-600 to-blue-700 border-2 border-blue-600 cursor-pointer hover:border-blue-700 transition font-bold shadow-md appearance-none"
-                                    style={{backgroundImage: 'url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22white%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3e%3cpolyline points=%226 9 12 15 18 9%22%3e%3c/polyline%3e%3c/svg%3e")', backgroundRepeat: 'no-repeat', backgroundPosition: 'right 8px center', backgroundSize: '20px', paddingRight: '36px'}}
+                                    value={priceFilter}
+                                    onChange={(e) => setPriceFilter(e.target.value)}
+                                    className="w-full px-4 py-3.5 rounded-xl text-gray-700 outline-none bg-white border-2 border-orange-300 cursor-pointer hover:border-orange-400 transition font-bold appearance-none"
+                                    style={{backgroundImage: 'url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23f97316%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3e%3cpolyline points=%226 9 12 15 18 9%22%3e%3c/polyline%3e%3c/svg%3e")', backgroundRepeat: 'no-repeat', backgroundPosition: 'right 8px center', backgroundSize: '20px', paddingRight: '36px'}}
                                 >
                                     <option value="newest">✨ Tour mới nhất</option>
                                     <option value="price-asc">⬆️ Giá thấp đến cao</option>

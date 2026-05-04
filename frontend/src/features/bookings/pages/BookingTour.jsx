@@ -1,6 +1,5 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useMemo } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import bookingApi from "../api/bookingApi";
 
 const BookingTour = () => {
   const location = useLocation();
@@ -12,50 +11,46 @@ const BookingTour = () => {
 
   const totalGuests = Number(guestSize?.adult || 0) + Number(guestSize?.child || 0) + Number(guestSize?.infant || 0);
   
-  // 1. KIỂM TRA LOẠI TOUR CHUẨN XÁC (Bắt cả vehicle_type lẫn transportType đề phòng DB đặt sai tên)
   const isDomestic = tour?.tour_type === "domestic";
   const isInternational = tour?.tour_type === "international";
- const isBedBus = true;
-  const isSeatBus = false;
 
-// 2. TỰ ĐỘNG SINH DỮ LIỆU NẾU DATABASE RỖNG
-// 2. ÉP BUỘC SINH 30 GHẾ (BỎ QUA DATABASE ĐỂ TEST UI CHO ĐẸP)
-  const { tangDuoi, tangTren, seatBusBeds, allBeds } = useMemo(() => {
-    
-    // HACK: Ép tạo ra luôn 30 ghế, không thèm nhìn Database nữa
-    let beds = Array.from({ length: 30 }, (_, i) => ({
-      code: `A${i + 1}`,
-      type: "single", // Đơn
-      isBooked: false
-    }));
+  // 1. ĐỌC LOẠI XE TỪ DATABASE CHUẨN
+  const isBedBus = tour?.vehicle_type === "bed";
+  const isSeatBus = tour?.vehicle_type === "seat";
+
+  // 2. TÁCH DỮ LIỆU GHẾ CHO TỪNG LOẠI XE
+  const { tangDuoi, tangTren, seatBusBeds } = useMemo(() => {
+    let beds = tour?.beds || [];
 
     if (isBedBus) {
-      const half = Math.ceil(beds.length / 2); // 30 chia 2 = 15 chẵn mỗi tầng
-      return { tangDuoi: beds.slice(0, half), tangTren: beds.slice(half), seatBusBeds: [], allBeds: beds };
+      // Xe giường nằm 24 chỗ (12 dưới, 12 trên)
+      const half = Math.ceil(beds.length / 2);
+      return {
+        tangDuoi: beds.slice(0, half),
+        tangTren: beds.slice(half),
+        seatBusBeds: []
+      };
     } else if (isSeatBus) {
-      return { tangDuoi: [], tangTren: [], seatBusBeds: beds, allBeds: beds };
+      // Xe ghế ngồi 29 chỗ (1 tầng)
+      return { tangDuoi: [], tangTren: [], seatBusBeds: beds };
     }
-    return { tangDuoi: [], tangTren: [], seatBusBeds: [], allBeds: [] };
+    
+    return { tangDuoi: [], tangTren: [], seatBusBeds: [] };
   }, [tour, isBedBus, isSeatBus]);
 
   
-  const handleBooking = async () => {
+  const handleBooking = () => {
     if (isDomestic && selectedBeds.length !== totalGuests) return;
     
-    setLoading(true);
-    try {
-      await bookingApi.createBooking({ 
-        tourId: tour._id, 
-        selected_beds: isDomestic ? selectedBeds : [], 
-        guest_size: guestSize, 
-        contact_info: contactInfo 
-      });
-      navigate("/my-bookings");
-    } catch (e) {
-      alert(e.response?.data?.message || "Lỗi đặt tour: Database Backend chưa khớp số ghế.");
-    } finally {
-      setLoading(false);
-    }
+    navigate("/booking-payment", {
+      state: {
+        tour,
+        guestSize,
+        contactInfo,
+        tourPrice,
+        selectedBeds 
+      }
+    });
   };
 
   const handleSelectSeat = (code) => {
@@ -67,7 +62,8 @@ const BookingTour = () => {
   };
 
   if (!tour) return null;
-
+  const isButtonDisabled = isDomestic ? selectedBeds.length !== totalGuests : false;
+  
   return (
     <div className="bg-gray-50 min-h-screen pb-32 font-sans">
       <div className="max-w-4xl mx-auto bg-white min-h-screen shadow-sm border-x">
@@ -103,39 +99,36 @@ const BookingTour = () => {
                  <div className="w-5 h-7 border-2 border-gray-200 rounded bg-gray-200 flex items-center justify-center text-gray-400 font-black text-[10px]">X</div> Đã bán
                </div>
                <div className="flex items-center gap-2">
-                 <div className="w-5 h-7 border-2 border-green-500 rounded bg-green-500 flex items-center justify-center text-white font-black text-[10px]">✓</div> Đang chọn
+                 <div className="w-5 h-7 border-2 border-blue-600 rounded bg-blue-600 flex items-center justify-center text-white font-black text-[10px]">✓</div> Đang chọn
                </div>
              </div>
           )}
 
           {/* =========================================
-              HIỂN THỊ: XE GIƯỜNG NẰM (GIƯỜNG ĐÔI/ĐƠN)
+              HIỂN THỊ 1: XE GIƯỜNG NẰM (2 TẦNG - 24 CHỖ)
               ========================================= */}
           {isBedBus && (
             <div className="flex flex-col md:flex-row justify-center gap-10 md:gap-20">
+              
+              {/* TẦNG DƯỚI (A1 - A12) */}
               <div className="flex flex-col items-center">
                 <h4 className="font-bold mb-4 text-gray-700">Tầng dưới</h4>
-                <div className="bg-gray-100 p-6 rounded-t-[60px] rounded-b-[20px] w-64 shadow-inner border border-gray-200">
-                  <div className="flex justify-center mb-6">
-                     <div className="w-8 h-8 rounded-full border-4 border-gray-300 flex items-center justify-center">
-                        <div className="w-2 h-2 bg-gray-300 rounded-full"></div>
-                     </div>
+                <div className="bg-gray-50 p-6 rounded-t-[60px] rounded-b-[20px] w-[280px] shadow-sm border border-gray-200">
+                  <div className="flex justify-between items-center mb-8 px-2">
+                    <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center shadow-sm">
+                      <span className="text-[10px] font-bold text-white leading-tight">Tài xế</span>
+                    </div>
+                    <div className="w-6 h-6 rounded-full border-4 border-gray-300"></div>
+                    <div className="w-10 h-10 bg-red-500 rounded-lg flex items-center justify-center shadow-sm">
+                      <span className="text-[10px] font-bold text-white text-center leading-tight">Cửa<br/>lên</span>
+                    </div>
                   </div>
-                  <div className="grid grid-cols-3 gap-x-4 gap-y-4">
+                  <div className="grid grid-cols-3 gap-x-4 gap-y-5">
                     {tangDuoi.map(bed => (
-                      <button
-                        key={bed.code} disabled={bed.isBooked} onClick={() => handleSelectSeat(bed.code)}
-                        className={`relative w-12 h-16 mx-auto rounded-lg border-2 flex flex-col items-center justify-center transition-all ${
-                          bed.isBooked ? 'bg-gray-200 border-gray-200 text-gray-400 cursor-not-allowed' : selectedBeds.includes(bed.code) ? 'bg-green-500 border-green-500 text-white shadow-md' : 'bg-white border-gray-300 text-gray-700 hover:border-green-400'
-                        }`}
-                      >
+                      <button key={bed.code} disabled={bed.isBooked} onClick={() => handleSelectSeat(bed.code)}
+                        className={`relative w-12 h-16 mx-auto rounded-lg border-2 flex flex-col items-center justify-center transition-all ${bed.isBooked ? 'bg-gray-200 border-gray-200 text-gray-400 cursor-not-allowed' : selectedBeds.includes(bed.code) ? 'bg-blue-600 border-blue-600 text-white shadow-md' : 'bg-white border-gray-300 text-blue-600 hover:border-blue-400'}`}>
                         {bed.isBooked ? <span className="text-xl font-black opacity-50">X</span> : (
-                          <>
-                            <span className="text-[11px] font-bold">{bed.code}</span>
-                            <span className={`text-[7px] uppercase font-bold opacity-80 mt-0.5 ${bed.type === 'double' ? 'text-orange-600' : 'text-blue-500'}`}>
-                              {bed.type === 'double' ? 'Đôi' : 'Đơn'}
-                            </span>
-                          </>
+                          <><span className="text-[12px] font-bold">{bed.code}</span><span className="text-[8px] font-bold opacity-70 mt-1">ĐƠN</span></>
                         )}
                       </button>
                     ))}
@@ -143,57 +136,52 @@ const BookingTour = () => {
                 </div>
               </div>
 
+              {/* TẦNG TRÊN (B1 - B12) */}
               <div className="flex flex-col items-center">
                 <h4 className="font-bold mb-4 text-gray-700">Tầng trên</h4>
-                <div className="bg-gray-100 p-6 rounded-t-[60px] rounded-b-[20px] w-64 shadow-inner border border-gray-200">
-                  <div className="flex justify-center mb-6"><div className="w-8 h-8"></div></div>
-                  <div className="grid grid-cols-3 gap-x-4 gap-y-4">
+                <div className="bg-gray-50 p-6 rounded-t-[60px] rounded-b-[20px] w-[280px] shadow-sm border border-gray-200">
+                  <div className="h-[72px] mb-8"></div>
+                  <div className="grid grid-cols-3 gap-x-4 gap-y-5">
                     {tangTren.map(bed => (
-                      <button
-                        key={bed.code} disabled={bed.isBooked} onClick={() => handleSelectSeat(bed.code)}
-                        className={`relative w-12 h-16 mx-auto rounded-lg border-2 flex flex-col items-center justify-center transition-all ${
-                          bed.isBooked ? 'bg-gray-200 border-gray-200 text-gray-400 cursor-not-allowed' : selectedBeds.includes(bed.code) ? 'bg-green-500 border-green-500 text-white shadow-md' : 'bg-white border-gray-300 text-gray-700 hover:border-green-400'
-                        }`}
-                      >
+                      <button key={bed.code} disabled={bed.isBooked} onClick={() => handleSelectSeat(bed.code)}
+                        className={`relative w-12 h-16 mx-auto rounded-lg border-2 flex flex-col items-center justify-center transition-all ${bed.isBooked ? 'bg-gray-200 border-gray-200 text-gray-400 cursor-not-allowed' : selectedBeds.includes(bed.code) ? 'bg-blue-600 border-blue-600 text-white shadow-md' : 'bg-white border-gray-300 text-blue-600 hover:border-blue-400'}`}>
                         {bed.isBooked ? <span className="text-xl font-black opacity-50">X</span> : (
-                          <>
-                            <span className="text-[11px] font-bold">{bed.code}</span>
-                            <span className={`text-[7px] uppercase font-bold opacity-80 mt-0.5 ${bed.type === 'double' ? 'text-orange-600' : 'text-blue-500'}`}>
-                              {bed.type === 'double' ? 'Đôi' : 'Đơn'}
-                            </span>
-                          </>
+                          <><span className="text-[12px] font-bold">{bed.code}</span><span className="text-[8px] font-bold opacity-70 mt-1">ĐƠN</span></>
                         )}
                       </button>
                     ))}
                   </div>
                 </div>
               </div>
+
             </div>
           )}
 
           {/* =========================================
-              HIỂN THỊ: XE GHẾ NGỒI (A1 -> A29)
+              HIỂN THỊ 2: XE GHẾ NGỒI (1 TẦNG - 29 CHỖ)
               ========================================= */}
           {isSeatBus && (
             <div className="flex flex-col items-center">
-              <h4 className="font-bold mb-4 text-gray-700">Sơ đồ xe (29 chỗ ngồi)</h4>
-              <div className="bg-gray-100 p-6 rounded-t-[60px] rounded-b-[20px] max-w-sm w-full shadow-inner border border-gray-200">
-                <div className="flex justify-between items-center mb-6 px-4">
-                   <span className="text-xs font-bold text-gray-400">Cửa lên</span>
-                   <div className="w-8 h-8 rounded-full border-4 border-gray-300 flex items-center justify-center">
-                      <div className="w-2 h-2 bg-gray-300 rounded-full"></div>
-                   </div>
+              <h4 className="font-bold mb-4 text-gray-700">Sơ đồ xe (29 chỗ)</h4>
+              <div className="bg-gray-50 p-6 rounded-t-[60px] rounded-b-[20px] w-[340px] shadow-sm border border-gray-200">
+                
+                {/* Khu vực Đầu xe */}
+                <div className="flex justify-between items-center px-2 mb-8">
+                  <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center shadow-sm">
+                    <span className="text-[10px] font-bold text-white leading-tight">Tài xế</span>
+                  </div>
+                  <div className="w-6 h-6 rounded-full border-4 border-gray-300"></div>
+                  <div className="w-10 h-10 bg-red-500 rounded-lg flex items-center justify-center shadow-sm">
+                    <span className="text-[10px] font-bold text-white text-center leading-tight">Cửa<br/>lên</span>
+                  </div>
                 </div>
+
                 <div className="grid grid-cols-4 gap-x-2 gap-y-4">
                   {seatBusBeds.map(bed => (
-                    <button
-                      key={bed.code} disabled={bed.isBooked} onClick={() => handleSelectSeat(bed.code)}
-                      className={`relative w-12 h-14 mx-auto rounded-lg border-2 flex flex-col items-center justify-center transition-all ${
-                        bed.isBooked ? 'bg-gray-200 border-gray-200 text-gray-400 cursor-not-allowed' : selectedBeds.includes(bed.code) ? 'bg-green-500 border-green-500 text-white shadow-md' : 'bg-white border-gray-300 text-gray-700 hover:border-green-400'
-                      }`}
-                    >
+                    <button key={bed.code} disabled={bed.isBooked} onClick={() => handleSelectSeat(bed.code)}
+                      className={`relative w-12 h-14 mx-auto rounded-lg border-2 flex flex-col items-center justify-center transition-all ${bed.isBooked ? 'bg-gray-200 border-gray-200 text-gray-400 cursor-not-allowed' : selectedBeds.includes(bed.code) ? 'bg-blue-600 border-blue-600 text-white shadow-md' : 'bg-white border-gray-300 text-blue-600 hover:border-blue-400'}`}>
                       {bed.isBooked ? <span className="text-xl font-black opacity-50">X</span> : (
-                        <span className="text-[11px] font-bold">{bed.code}</span>
+                        <span className="text-[12px] font-bold">{bed.code}</span>
                       )}
                     </button>
                   ))}
@@ -202,13 +190,13 @@ const BookingTour = () => {
             </div>
           )}
 
-          {/* HIỂN THỊ: MÁY BAY */}
+          {/* HIỂN THỊ 3: MÁY BAY */}
           {isInternational && (
             <div className="flex flex-col items-center justify-center py-16 px-6 bg-blue-50 rounded-3xl border border-blue-100 text-center mx-4 shadow-sm">
                <span className="text-6xl mb-6 block animate-bounce">✈️</span>
                <h3 className="text-2xl md:text-3xl font-black text-blue-800 uppercase mb-4 tracking-tight">Xác Nhận Đơn Hàng Quốc Tế</h3>
                <p className="text-gray-600 font-medium max-w-lg leading-relaxed">
-                 Đối với tour di chuyển bằng máy bay, hệ thống không hỗ trợ chọn ghế trước. Vị trí ghế ngồi sẽ được hãng hàng không sắp xếp tự động khi Quý khách làm thủ tục check-in tại sân bay.
+                 Đối với tour di chuyển bằng máy bay, hệ thống không hỗ trợ chọn ghế trước. Vị trí ghế ngồi sẽ được hãng hàng không sắp xếp tự động khi làm thủ tục.
                </p>
                <p className="mt-6 text-sm font-bold text-blue-600 bg-blue-100 py-2 px-4 rounded-lg inline-block">
                  Quý khách vui lòng bấm "Tiếp tục" bên dưới để thanh toán.
@@ -240,16 +228,12 @@ const BookingTour = () => {
             <div className="text-right flex items-center gap-2">
               <span className="text-sm text-gray-600">Tổng cộng:</span>
               <span className="text-xl md:text-2xl font-black text-blue-600">
-                {new Intl.NumberFormat('vi-VN').format(totalPrice)} đ
+                {new Intl.NumberFormat('vi-VN').format(tourPrice)} đ
               </span>
             </div>
             
-            <button 
-              disabled={isButtonDisabled}
-              onClick={handleBooking}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg font-bold transition-all disabled:bg-gray-300 disabled:cursor-not-allowed"
-            >
-              {loading ? "Đang xử lý..." : "Tiếp tục"}
+            <button disabled={isButtonDisabled} onClick={handleBooking} className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg font-bold transition-all disabled:bg-gray-300 disabled:cursor-not-allowed">
+              Tiếp tục
             </button>
           </div>
         </div>
