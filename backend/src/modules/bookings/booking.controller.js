@@ -1,178 +1,203 @@
 const Booking = require("./booking.model");
 const Tour = require("../tours/tour.model");
 
-// 1. Hàm Tạo Booking
-// 1. Hàm Tạo Booking
-exports.createBooking = async (req, res) => {
-  try {
-    const userId = req.user.id;
-    const { tourId, guest_size, contact_info } = req.body;
+// 1. HÀM TẠO BOOKING
+exports.createBooking = async(req, res) => {
+    try {
+        const {
+            tourId,
+            selected_beds,
+            guest_size,
+            contact_info,
+            hotel_addon,
+            userId
+        } = req.body;
 
-    const adult = Number(guest_size && guest_size.adult) || 0;
-    const child = Number(guest_size && guest_size.child) || 0;
-    const infant = Number(guest_size && guest_size.infant) || 0;
+        const tour = await Tour.findById(tourId);
+        if (!tour) return res.status(404).json({ message: "Không tìm thấy tour" });
 
-    if (adult < 1) {
-      return res.status(400).json({ message: "Phải có ít nhất 1 người lớn." });
+        // Parse guest count safely
+        let adult = 0,
+            child = 0,
+            infant = 0;
+        if (guest_size) {
+            adult = Number(guest_size.adult || 0);
+            child = Number(guest_size.child || 0);
+            infant = Number(guest_size.infant || 0);
+        }
+        const totalGuests = adult + child + infant;
+        if (totalGuests === 0) {
+            return res.status(400).json({ message: "Số lượng khách phải lớn hơn 0" });
+        }
+
+        let couplePrice = 0;
+        let updatedTour = null;
+
+        // LOGIC PHÂN LOẠI THEO TOUR_TYPE
+        if (tour.tour_type === "domestic") {
+            // TOUR TRONG NƯỚC: Bắt buộc chọn giường/ghế
+            if (!selected_beds || selected_beds.length !== totalGuests) {
+                return res.status(400).json({
+                    message: `Vui lòng chọn đủ ${totalGuests} vị trí giường/ghế.`
+                });
+            }
+
+            // Kiểm tra tất cả ghế tồn tại
+            const invalidSeats = selected_beds.filter(
+                code => !tour.beds.find(b => b.code === code)
+            );
+            if (invalidSeats.length > 0) {
+                return res.status(400).json({
+                    message: `Ghế không tồn tại: ${invalidSeats.join(", ")}`
+                });
+            }
+
+            // Kiểm tra ghế chưa bị đặt
+            const bookedSeats = selected_beds.filter(
+                code => tour.beds.find(b => b.code === code && b.isBooked)
+            );
+            if (bookedSeats.length > 0) {
+                return res.status(400).json({
+                    message: `Ghế đã bị đặt: ${bookedSeats.join(", ")}`
+                });
+            }
+
+            // Tính phụ phí giường đôi (chỉ khi là giường nằm)
+            if (tour.vehicle_type === "bed" && tour.couple_bed_price) {
+                selected_beds.forEach((code) => {
+                    const bed = tour.beds.find((b) => b.code === code);
+                    if (bed && bed.type === "double") {
+                        couplePrice += tour.couple_bed_price;
+                    }
+                });
+            }
+
+            // Cập nhật trạng thái giường & giảm chỗ trống
+            updatedTour = await Tour.findOneAndUpdate({
+                _id: tourId,
+                available_seats: { $gte: totalGuests },
+            }, {
+                $inc: { available_seats: -totalGuests },
+                $set: { "beds.$[elem].isBooked": true },
+            }, {
+                arrayFilters: [{ "elem.code": { $in: selected_beds } }],
+                new: true,
+            });
+
+            if (!updatedTour) {
+                return res.status(400).json({
+                    message: "Chỗ ngồi đã bị người khác đặt hoặc hết chỗ!"
+                });
+            }
+        } else {
+            // TOUR NƯỚC NGOÀI: Không cần chọn ghế, chỉ giảm available_seats
+            if (tour.available_seats < totalGuests) {
+                return res.status(400).json({ message: "Tour quốc tế đã hết chỗ!" });
+            }
+
+            updatedTour = await Tour.findByIdAndUpdate(
+                tourId, { $inc: { available_seats: -totalGuests } }, { new: true }
+            );
+
+            if (!updatedTour) {
+                return res.status(400).json({ message: "Tour không tồn tại hoặc hết chỗ!" });
+            }
+        }
+
+        // TÍNH TOÁN GIÁ TIỀN
+        const priceData = updatedTour.price || {};
+        const adultPrice = (Number(priceData.adult) || 0) * adult;
+        const childPrice = (Number(priceData.child) || 0) * child;
+        const infantPrice = (Number(priceData.infant) || 0) * infant;
+        const hotelPrice = (hotel_addon && Number(hotel_addon.price_per_night)) || 0;
+
+        const baseTotal = adultPrice + childPrice + infantPrice + hotelPrice + couplePrice;
+        const finalPrice = baseTotal * (1 - (updatedTour.sale_percentage || 0) / 100);
+
+        // LƯU ĐƠN ĐẶT TOUR
+        const doubleBedCodes = selected_beds?.filter(code => {
+            const bed = tour.beds?.find(b => b.code === code);
+            return bed?.type === "double";
+        }) || [];
+
+        const booking = await Booking.create({
+            user: userId || (req.user && req.user.id),
+            tour: tourId,
+            guest_size: { adult, child, infant },
+            selected_seats: selected_beds || [],
+            selected_beds: selected_beds || [],
+            couple_beds: doubleBedCodes,
+            couple_price: couplePrice,
+            hotel_addon: hotel_addon || {},
+            contact_info: contact_info,
+            total_price: finalPrice,
+            status: "pending"
+        });
+
+        res.status(201).json({
+            success: true,
+            message: "🎉 Đặt tour thành công!",
+            data: booking
+        });
+
+    } catch (error) {
+        console.error("Error at createBooking:", error);
+        res.status(500).json({ message: "Lỗi hệ thống: " + error.message });
     }
-
-    const tour = await Tour.findById(tourId);
-    if (!tour) return res.status(404).json({ message: "Tour không tồn tại." });
-
-    const today = new Date();
-    if (new Date(tour.start_date) < today) {
-      return res.status(400).json({
-        message: "Rất tiếc, tour này đã khởi hành nên không thể đặt thêm vé.",
-      });
-    }
-
-    // ✅ XỬ LÝ YÊU CẦU 2: TRỪ SỐ LƯỢNG VÉ CÒN TRỐNG (ATOMIC UPDATE)
-    const seatsToReserve = adult + child + infant; 
-    
-    if (seatsToReserve === 0) {
-      return res.status(400).json({ message: "Dữ liệu đoàn khách không hợp lệ." });
-    }
-    
-    // Yêu cầu MongoDB tìm Tour này, ĐỒNG THỜI kiểm tra vé có đủ không, VÀ trừ vé đi
-    const updatedTour = await Tour.findOneAndUpdate(
-      { 
-        _id: tourId, 
-        available_seats: { $gte: seatsToReserve } // Phải còn đủ vé trống
-      },
-      { 
-        $inc: { available_seats: -seatsToReserve } // Trừ đi số lượng khách
-      },
-      { 
-        returnDocument: 'after', 
-        runValidators: true
-      }
-    );
-
-    // Nếu không tìm thấy updatedTour, nghĩa là ai đó đã nhanh tay mua hết vé
-    if (!updatedTour) {
-      return res.status(400).json({ 
-        message: "Rất tiếc, tour này đã hết chỗ hoặc không đủ số lượng vé bạn cần!" 
-      });
-    }
-
-    // Tính toán giá tiền dựa trên data MỚI NHẤT (updatedTour)
-    const adultPrice = ((updatedTour.price && updatedTour.price.adult) || 0) * adult;
-    const childPrice = ((updatedTour.price && updatedTour.price.child) || 0) * child;
-    const infantPrice = ((updatedTour.price && updatedTour.price.infant) || 0) * infant;
-
-    const basePrice = adultPrice + childPrice + infantPrice;
-    const finalPrice = basePrice * (1 - (updatedTour.sale_percentage || 0) / 100);
-
-    if (isNaN(finalPrice)) {
-      // Rollback: Nếu tính tiền bị lỗi, cộng trả lại số vé cho tour
-      await Tour.findByIdAndUpdate(tourId, { $inc: { available_seats: seatsToReserve } });
-      return res.status(400).json({ message: "Lỗi tính toán giá tour." });
-    }
-
-    const booking = await Booking.create({
-      user: userId,
-      tour: tourId,
-      guest_size: { adult, child, infant },
-      contact_info,
-      total_price: finalPrice,
-    });
-
-    res.status(201).json({ message: "🎉 Đặt tour thành công!", data: booking });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
 };
 
-// 2. Hàm Lấy Lịch Sử Booking
-exports.getMyBookings = async (req, res) => {
-  try {
-    const userId = req.user.id;
-    const bookings = await Booking.find({ user: userId })
-      .populate("tour", "title images duration start_date")
-      .sort({ createdAt: -1 });
-
-    res.status(200).json({ status: "success", data: bookings });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
+// 2. LẤY LỊCH SỬ (MY BOOKINGS)
+exports.getMyBookings = async(req, res) => {
+    try {
+        const bookings = await Booking.find({ user: req.user.id })
+            .populate("tour", "title images duration start_date")
+            .sort({ createdAt: -1 });
+        res.status(200).json({ success: true, data: bookings });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
 };
 
-// 3. Hàm Lấy TẤT CẢ Booking (Dành riêng cho Admin)
-exports.getAllBookings = async (req, res) => {
-  try {
-    // Tìm tất cả, không lọc theo userId
-    const bookings = await Booking.find()
-      .populate("user", "username full_name email") // Kéo thêm thông tin người dùng
-      .populate("tour", "title start_date duration") // Kéo thêm thông tin tour
-      .sort({ createdAt: -1 }); // Mới nhất lên đầu
+// 3. HỦY TOUR & HOÀN CHỖ
+exports.cancelBooking = async(req, res) => {
+    try {
+        const booking = await Booking.findById(req.params.id).populate("tour");
+        if (!booking || booking.status === "CANCELED") {
+            return res.status(404).json({ message: "Đơn hàng không tồn tại hoặc đã hủy!" });
+        }
 
-    res.status(200).json({ status: "success", data: bookings });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
+        const totalReturn = booking.guest_size.adult + booking.guest_size.child + booking.guest_size.infant;
+
+        // Hoàn trả available_seats
+        const updateData = { $inc: { available_seats: totalReturn } };
+        const options = {};
+
+        // Nếu tour trong nước có chọn ghế, reset trạng thái
+        if (booking.selected_beds && booking.selected_beds.length > 0) {
+            updateData.$set = { "beds.$[elem].isBooked": false };
+            options.arrayFilters = [{ "elem.code": { $in: booking.selected_beds } }];
+        }
+
+        await Tour.findByIdAndUpdate(booking.tour._id, updateData, options);
+
+        booking.status = "CANCELED";
+        await booking.save();
+
+        res.status(200).json({ message: "Đã hủy thành công và hoàn trả vị trí chỗ ngồi." });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
 };
 
-// Hàm xử lý Hủy đặt tour của Khách hàng
-exports.cancelBooking = async (req, res) => {
-  try {
-    const bookingId = req.params.id;
-    // Tìm đơn hàng và "kéo" theo thông tin tour để lấy ngày khởi hành
-    const booking = await Booking.findById(bookingId).populate("tour");
-
-    if (!booking) {
-      return res.status(404).json({ message: "Không tìm thấy đơn đặt tour" });
+// 4. ADMIN: LẤY TẤT CẢ BOOKINGS
+exports.getAllBookings = async(req, res) => {
+    try {
+        const bookings = await Booking.find()
+            .populate("user", "username full_name email")
+            .populate("tour", "title start_date duration")
+            .sort({ createdAt: -1 });
+        res.status(200).json({ success: true, data: bookings });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
     }
-
-    // Kiểm tra xem đơn đã bị hủy trước đó chưa
-    if (booking.status === "CANCELED") {
-      return res.status(400).json({ message: "Đơn này đã được hủy trước đó." });
-    }
-
-    const tour = booking.tour;
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const startDate = new Date(tour.start_date);
-    startDate.setHours(0, 0, 0, 0);
-
-    // Tính toán số ngày từ hôm nay đến ngày khởi hành
-    const diffTime = startDate.getTime() - today.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-    // Nếu ngày khởi hành đã qua hoặc là ngày hôm nay thì khóa không cho hủy
-    if (diffDays <= 0) {
-      return res.status(400).json({ message: "Tour đã khởi hành, không thể hủy." });
-    }
-
-    // LOGIC TÍNH PHẦN TRĂM HOÀN TIỀN
-    let refundPercentage = 0;
-    if (diffDays >= 30) {
-      refundPercentage = 100;
-    } else if (diffDays >= 20) {
-      refundPercentage = 50;
-    } else if (diffDays >= 15) {
-      refundPercentage = 20;
-    } else {
-      refundPercentage = 0; // Hủy sát ngày (dưới 15 ngày) sẽ mất 100% tiền
-    }
-
-    // Cập nhật trạng thái đơn hàng
-    booking.status = "CANCELED";
-    booking.refund_percentage = refundPercentage;
-    booking.refund_amount = (booking.total_price * refundPercentage) / 100;
-    await booking.save();
-
-    // RẤT QUAN TRỌNG: Trả lại số ghế trống (available_seats) cho Tour
-    const totalTickets = (booking.guest_size?.adult || 0) + (booking.guest_size?.child || 0) + (booking.guest_size?.infant || 0);
-    tour.available_seats += totalTickets;
-    await tour.save();
-
-    res.status(200).json({
-      status: "success",
-      message: `Đã hủy tour thành công. Bạn được hoàn ${refundPercentage}% tiền.`,
-      data: booking
-    });
-
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
 };

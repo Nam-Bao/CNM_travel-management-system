@@ -159,40 +159,47 @@ const HomePage = () => {
                         <h1 className="text-5xl md:text-6xl font-black mb-6 drop-shadow-2xl">Lên Kế Hoạch Cho Chuyến Đi Tiếp Theo</h1>
                         <p className="text-lg md:text-xl mb-10 font-medium text-blue-100">Khám phá hàng ngàn tour du lịch với mức giá không thể tốt hơn</p>
                         
-                        {/* THANH TÌM KIẾM, LỌC & SẮP XẾP */}
-                        <div className="bg-white p-3 rounded-2xl shadow-2xl flex flex-col md:flex-row gap-3 mx-auto w-full">
-                            <div className="flex-1 relative">
-                                <span className="absolute left-4 top-3.5 text-gray-400 text-lg">🔍</span>
+                        {/* THANH TÌM KIẾM, LỌC & SẮP XẾP - IMPROVED */}
+                        <div className="bg-white p-4 rounded-2xl shadow-2xl flex flex-col md:flex-row gap-3 mx-auto w-full border border-blue-100">
+                            {/* TÌM KIẾM */}
+                            <div className="flex-1 relative group">
+                                <span className="absolute left-4 top-3.5 text-blue-500 text-xl font-bold">🔍</span>
                                 <input 
                                     type="text" 
                                     placeholder="Bạn muốn đi đâu? (VD: Đà Lạt, Sapa...)" 
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
-                                    className="w-full pl-12 pr-4 py-3 rounded-xl text-gray-800 outline-none focus:ring-2 focus:ring-blue-200 transition bg-gray-50 font-medium"
+                                    className="w-full pl-12 pr-4 py-3.5 rounded-xl text-gray-800 outline-none focus:ring-2 focus:ring-blue-400 transition bg-gray-50 font-medium placeholder-gray-500"
                                 />
                             </div>
-                            <div className="w-full md:w-56">
+                            
+                            {/* LỌC GIÁ */}
+                            <div className="w-full md:w-64 relative">
                                 <select 
                                     value={priceFilter}
                                     onChange={(e) => setPriceFilter(e.target.value)}
-                                    className="w-full px-4 py-3 rounded-xl text-gray-700 outline-none bg-gray-50 border border-gray-100 cursor-pointer hover:bg-gray-100 font-medium"
+                                    className="w-full px-4 py-3.5 rounded-xl text-gray-700 outline-none bg-white border-2 border-orange-300 cursor-pointer hover:border-orange-400 transition font-bold appearance-none"
+                                    style={{backgroundImage: 'url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23f97316%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3e%3cpolyline points=%226 9 12 15 18 9%22%3e%3c/polyline%3e%3c/svg%3e")', backgroundRepeat: 'no-repeat', backgroundPosition: 'right 8px center', backgroundSize: '20px', paddingRight: '36px'}}
                                 >
                                     <option value="all">💸 Mọi mức giá</option>
-                                    <option value="under-2">Dưới 2 triệu</option>
-                                    <option value="2-5">Từ 2 - 5 triệu</option>
-                                    <option value="over-5">Trên 5 triệu</option>
+                                    <option value="under-2">💰 Dưới 2 triệu</option>
+                                    <option value="2-5">💵 2 - 5 triệu</option>
+                                    <option value="over-5">💴 Trên 5 triệu</option>
                                 </select>
                             </div>
-                            <div className="w-full md:w-56">
+                            
+                            {/* SẮP XẾP */}
+                            <div className="w-full md:w-64 relative">
                                 <select 
                                     value={sortType}
                                     onChange={(e) => setSortType(e.target.value)}
-                                    className="w-full px-4 py-3 rounded-xl text-blue-700 outline-none bg-blue-50 border border-blue-100 cursor-pointer hover:bg-blue-100 font-bold"
+                                    className="w-full px-4 py-3.5 rounded-xl text-white outline-none bg-gradient-to-r from-blue-600 to-blue-700 border-2 border-blue-600 cursor-pointer hover:border-blue-700 transition font-bold shadow-md appearance-none"
+                                    style={{backgroundImage: 'url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22white%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3e%3cpolyline points=%226 9 12 15 18 9%22%3e%3c/polyline%3e%3c/svg%3e")', backgroundRepeat: 'no-repeat', backgroundPosition: 'right 8px center', backgroundSize: '20px', paddingRight: '36px'}}
                                 >
                                     <option value="newest">✨ Tour mới nhất</option>
-                                    <option value="price-asc">Giá thấp đến cao</option>
-                                    <option value="price-desc">Giá cao xuống thấp</option>
-                                    <option value="date-asc">Khởi hành sớm nhất</option>
+                                    <option value="price-asc">⬆️ Giá thấp đến cao</option>
+                                    <option value="price-desc">⬇️ Giá cao xuống thấp</option>
+                                    <option value="date-asc">📅 Khởi hành sớm nhất</option>
                                 </select>
                             </div>
                         </div>

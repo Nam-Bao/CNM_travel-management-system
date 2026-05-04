@@ -14,6 +14,9 @@ const AddTourPage = () => {
     available_seats: "",
     description: "",
     sale_percentage: 0,
+    tour_type: "domestic", // "domestic" hoặc "international"
+    vehicle_type: "seat",
+    couple_bed_price: 0,
   });
   const [price, setPrice] = useState({ adult: "", child: 0, infant: 0 });
   const [itinerary, setItinerary] = useState([
@@ -255,6 +258,72 @@ const AddTourPage = () => {
                   className="w-full px-4 py-2 border border-red-300 rounded focus:ring-2 focus:ring-blue-500"
                 />
               </div>
+              <div>
+                <label className="block text-sm font-bold text-gray-700 mb-1">
+                  🚐 Loại tour *
+                </label>
+                <select
+                  name="tour_type"
+                  value={formData.tour_type}
+                  onChange={(e) => {
+                    handleBasicChange(e);
+                    // Reset vehicle_type khi đổi loại tour
+                    if (e.target.value === "international") {
+                      setFormData((prev) => ({
+                        ...prev,
+                        tour_type: e.target.value,
+                        vehicle_type: "seat",
+                        couple_bed_price: 0,
+                      }));
+                    }
+                  }}
+                  disabled={loading}
+                  className="w-full px-4 py-2 border rounded focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="domestic">
+                    🇻🇳 Tour trong nước (có chọn ghế/giường)
+                  </option>
+                  <option value="international">
+                    🌍 Tour nước ngoài (máy bay)
+                  </option>
+                </select>
+              </div>
+              {formData.tour_type === "domestic" && (
+                <>
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-1">
+                      🚐 Loại xe *
+                    </label>
+                    <select
+                      name="vehicle_type"
+                      value={formData.vehicle_type}
+                      onChange={handleBasicChange}
+                      disabled={loading}
+                      className="w-full px-4 py-2 border rounded focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="seat">🪑 Xe ghế ngồi (29 chỗ)</option>
+                      <option value="bed">🛏️ Xe giường nằm (24 giường)</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-1">
+                      💵 Phụ thu giường đôi (VNĐ)
+                    </label>
+                    <input
+                      type="number"
+                      name="couple_bed_price"
+                      value={formData.couple_bed_price}
+                      onChange={handleBasicChange}
+                      disabled={loading}
+                      placeholder="0 = miễn phí"
+                      className="w-full px-4 py-2 border rounded focus:ring-2 focus:ring-blue-500"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Chỉ áp dụng khi chọn xe giường nằm
+                    </p>
+                  </div>
+                </>
+              )}
               <div className="md:col-span-2">
                 <label className="block text-sm font-bold text-gray-700 mb-1">
                   Mô tả tổng quan *

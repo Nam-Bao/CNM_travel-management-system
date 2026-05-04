@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from "react";
-import { useParams, Link, useNavigate } from "react-router-dom";
+import { useParams, Link, useNavigate, useLocation } from "react-router-dom"; 
 import tourApi from "../api/tourApi";
 import BookingForm from "../../bookings/components/BookingForm";
 
 const TourDetailPage = () => {
   const { slug } = useParams();
   const navigate = useNavigate();
+  const location = useLocation(); // Hứng dữ liệu từ trang chọn ghế trả về
+
   const [tour, setTour] = useState(null);
   const [loading, setLoading] = useState(true);
   const [mainImage, setMainImage] = useState("");
@@ -24,7 +26,7 @@ const TourDetailPage = () => {
         setMainImage(
           tourData.images?.[0] ||
             tourData.image_url ||
-            "https://placehold.co/800x500",
+            "https://placehold.co/800x500"
         );
       } catch (err) {
         console.error(err);
@@ -59,7 +61,6 @@ const TourDetailPage = () => {
       case "overview":
         return (
           <div className="space-y-12 animate-fadeIn">
-            {/* THÔNG TIN BẢO HIỂM DU LỊCH */}
             <section>
               <h2 className="text-xl font-black text-blue-800 border-l-4 border-blue-600 pl-3 mb-6 uppercase italic tracking-tighter">
                 Thông tin về bảo hiểm du lịch
@@ -96,14 +97,11 @@ const TourDetailPage = () => {
                     </span>
                     .
                   </p>
-
-                  {/* DÒNG CHỮ THỊNH CẦN THÊM ĐÂY */}
                   <div>
                     Toàn bộ phí bảo hiểm được tặng miễn phí cho khách hàng của
                     Lữ hành Traveloke với chương trình, giá và chất lượng dịch
                     vụ tour không đổi.
                   </div>
-
                   <p className="text-gray-400 text-[12px]">
                     Thông tin chi tiết, vui lòng liên hệ các văn phòng thuộc Hệ
                     thống Lữ hành Traveloke trên toàn quốc.
@@ -112,7 +110,6 @@ const TourDetailPage = () => {
               </div>
             </section>
 
-            {/* GALLERY HÌNH ẢNH */}
             <section>
               <h2 className="text-xl font-black text-blue-800 border-l-4 border-blue-600 pl-3 mb-6 uppercase italic tracking-tighter">
                 Hình ảnh điểm đến
@@ -137,7 +134,6 @@ const TourDetailPage = () => {
               </div>
             </section>
 
-            {/* TỔNG QUAN HẤP DẪN */}
             <section>
               <h2 className="text-xl font-black text-blue-800 border-l-4 border-blue-600 pl-3 mb-6 uppercase italic tracking-tighter">
                 Tour này có gì hấp dẫn
@@ -212,8 +208,6 @@ const TourDetailPage = () => {
 
   return (
     <div className="bg-gray-50 min-h-screen pb-20 flex flex-col">
-      {/* Header */}
-
       <main className="max-w-7xl mx-auto px-4 py-10">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
           <div className="lg:col-span-8 space-y-6">
@@ -302,7 +296,10 @@ const TourDetailPage = () => {
                   </p>
                 </div>
               </div>
-              <BookingForm tour={tour} />
+              
+              {/* QUAN TRỌNG NHẤT LÀ DÒNG NÀY: Truyền dữ liệu xuống BookingForm */}
+              <BookingForm tour={tour} savedData={location.state?.returnedData} />
+
             </div>
           </div>
         </div>

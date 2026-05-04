@@ -155,7 +155,7 @@ const TourCard = ({ tour }) => {
     <div className={`bg-white rounded-xl shadow-md overflow-hidden hover:shadow-xl transition-shadow duration-300 border border-gray-100 flex flex-col h-full relative group ${isTourEnded ? "opacity-95" : ""}`}>
       
       {/* KHU VỰC HÌNH ẢNH & BADGES */}
-      <div className="relative overflow-hidden h-56">
+      <div className="relative overflow-hidden bg-gray-200 aspect-video">
         {/* Badge Giảm Giá (Góc Trái) */}
         {tour.sale_percentage > 0 && !isTourEnded && (
           <div className="absolute top-3 left-3 z-30 bg-red-600 text-white text-[11px] font-black px-3 py-1.5 rounded-lg shadow-lg animate-pulse">
@@ -165,9 +165,22 @@ const TourCard = ({ tour }) => {
         
         {/* Badge Số Chỗ (Góc Phải) */}
         {tour.available_seats !== undefined && !isTourEnded && (
-          <div className="absolute top-3 right-3 z-30 bg-white/95 backdrop-blur-sm text-orange-600 border border-orange-200 px-3 py-1.5 rounded-lg text-[10px] font-black shadow-md flex items-center gap-1">
-            <span className="w-2 h-2 bg-orange-500 rounded-full animate-ping"></span>
-            CÒN {tour.available_seats} CHỖ
+          <div className={`absolute top-3 right-3 z-30 px-3 py-1.5 rounded-lg text-[10px] font-black shadow-md flex items-center gap-1 ${
+            tour.available_seats > 0 
+              ? 'bg-white/95 backdrop-blur-sm text-orange-600 border border-orange-200' 
+              : 'bg-red-600/95 backdrop-blur-sm text-white border border-red-700'
+          }`}>
+            {tour.available_seats > 0 ? (
+              <>
+                <span className="w-2 h-2 bg-orange-500 rounded-full animate-ping"></span>
+                CÒN {tour.available_seats} CHỖ
+              </>
+            ) : (
+              <>
+                <span className="w-2 h-2 bg-white rounded-full animate-pulse"></span>
+                HẾT CHỖ
+              </>
+            )}
           </div>
         )}
 
@@ -226,15 +239,15 @@ const TourCard = ({ tour }) => {
           </div>
           
           <Link 
-            to={`/tours/${tour.slug}`}
+            to={tour.available_seats > 0 && !isTourEnded ? `/tours/${tour.slug}` : "#"}
             className={`px-5 py-2.5 rounded-xl font-bold text-sm transition-all shadow-sm ${
-              isTourEnded 
-                ? "bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200" 
-                : "bg-blue-50 text-blue-700 hover:bg-blue-600 hover:text-white border border-blue-100 hover:shadow-md"
+              isTourEnded || tour.available_seats === 0
+                ? "bg-gray-200 text-gray-500 cursor-not-allowed border border-gray-300" 
+                : "bg-blue-50 text-blue-700 hover:bg-blue-600 hover:text-white border border-blue-100 hover:shadow-md hover:-translate-y-0.5"
             }`}
-            onClick={(e) => isTourEnded && e.preventDefault()}
+            onClick={(e) => (isTourEnded || tour.available_seats === 0) && e.preventDefault()}
           >
-            {isTourEnded ? "XEM CHI TIẾT" : "ĐẶT NGAY"}
+            {isTourEnded ? "ĐÃ KẾT THÚC" : tour.available_seats === 0 ? "HẾT CHỖ" : "ĐẶT NGAY"}
           </Link>
         </div>
       </div>
