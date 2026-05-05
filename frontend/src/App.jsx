@@ -17,12 +17,19 @@ import BookingHistory from "./features/bookings/pages/BookingHistory";
 import ManageBookings from "./features/admin/pages/ManageBookings";
 import VnpayReturn from "./features/bookings/pages/VnpayReturn";
 import BookingTour from "./features/bookings/pages/BookingTour";
+import BookingPayment from "./features/bookings/pages/BookingPayment";
 import InternationalBookingConfirm from "./features/bookings/pages/InternationalBookingConfirm";
 import MainLayout from "./components/layout/MainLayout";
 import ManageUsersPage from "./features/users/pages/ManageUsersPage";
 import HotelListing from "./features/hotels/pages/HotelListing";
 import HotelDetail from "./features/hotels/pages/HotelDetail";
 import HotelBookingPage from "./features/hotels/pages/HotelBookingPage";
+
+//Web Pages
+import PrivacyPolicy from './features/users/pages/PrivacyPolicy';
+import TermsOfUse from './features/users/pages/TermsOfUse';
+import AboutUs from './features/users/pages/AboutUs';
+
 
 function App() {
   return (
@@ -45,8 +52,12 @@ function App() {
           <Route path="/tours/:slug" element={<TourDetailPage />} />
           <Route path="/my-bookings" element={<BookingHistory />} />
           <Route path="/booking-tour" element={<BookingTour />} />
+          <Route path="/booking-payment" element={<BookingPayment />} />
           <Route path="/booking-international-confirm" element={<InternationalBookingConfirm />} />
           <Route path="/vnpay-return" element={<VnpayReturn />} />
+          <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+          <Route path="/terms" element={<TermsOfUse />} />
+          <Route path="/about" element={<AboutUs />} />
         </Route>
 
         {/* ========================================================

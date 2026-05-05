@@ -28,12 +28,12 @@ const Footer = () => {
               </Link>
             </li>
             <li>
-              <Link to="/privacy" className="hover:text-white transition">
+              <Link to="privacy-policy" className="hover:text-white transition">
                 Chính sách bảo mật
               </Link>
             </li>
             <li>
-              <Link to="/cancellation-policy" className="hover:text-white transition">
+              <Link to="privacy-policy" className="hover:text-white transition">
                 Chính sách hoàn hủy
               </Link>
             </li>

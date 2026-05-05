@@ -1,5 +1,6 @@
 const Booking = require("./booking.model");
 const Tour = require("../tours/tour.model");
+const sendTicketEmail = require("../../utils/sendEmail");
 
 // 1. HÀM TẠO BOOKING
 exports.createBooking = async(req, res) => {
@@ -10,6 +11,8 @@ exports.createBooking = async(req, res) => {
             guest_size,
             contact_info,
             hotel_addon,
+            payment_percent,
+            payment_method,
             userId
         } = req.body;
 
@@ -131,8 +134,35 @@ exports.createBooking = async(req, res) => {
             hotel_addon: hotel_addon || {},
             contact_info: contact_info,
             total_price: finalPrice,
+            payment_percent: payment_percent || 100, 
+            payment_method: payment_method || "VNPAY",
             status: "pending"
         });
+
+        // LUỒNG GỬI EMAIL VÉ ĐIỆN TỬ 
+        try {
+            // Gom dữ liệu từ Database vừa tạo và biến 'tour' (đã query ở trên)
+            const emailData = {
+                _id: booking._id,
+                tour: {
+                    title: tour.title,          // Tên tour lấy từ biến tour
+                    start_date: tour.start_date // Ngày đi lấy từ biến tour
+                },
+                contact_info: booking.contact_info,
+                guest_size: booking.guest_size,
+                selected_beds: booking.selected_beds,
+                total_price: booking.total_price,
+                payment_percent: booking.payment_percent
+            };
+
+            // Gọi hàm gửi email (Cố tình KHÔNG dùng chữ 'await' ở đây)
+            // Việc này giúp API trả kết quả về cho React ngay lập tức mà không bắt khách hàng phải chờ 3-5 giây gửi mail.
+            sendTicketEmail(emailData);
+            console.log("Đã kích hoạt luồng gửi vé điện tử chạy ngầm!");
+
+        } catch (mailError) {
+            console.error("Lỗi gửi email nhưng đơn hàng vẫn thành công:", mailError);
+        }
 
         res.status(201).json({
             success: true,

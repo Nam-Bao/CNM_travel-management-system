@@ -31,7 +31,7 @@ const AuthPage = () => {
       const response = await axiosClient.post(url, formData);
 
       // In ra F12 để xem Backend thực sự trả về cái gì
-      console.log("Dữ liệu API trả về:", response);
+      // console.log("Dữ liệu API trả về:", response);
 
       // Lấy token (tùy thuộc vào cấu trúc Backend, có thể là response.token hoặc response.data.token)
       const token = response.token || response.data?.token;

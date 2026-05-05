@@ -13,7 +13,6 @@ const BookingHistory = () => {
   const [currentUser, setCurrentUser] = useState(null);
   const [reviewingTourId, setReviewingTourId] = useState(null);
 
-  // ✅ STATE QUẢN LÝ MODAL HỦY TOUR
   const [cancelModalData, setCancelModalData] = useState(null);
 
   const fetchHistory = useCallback(async () => {
@@ -45,15 +44,6 @@ const BookingHistory = () => {
     fetchHistory();
   }, [navigate, fetchHistory]);
 
-  const handleLogout = () => {
-    if (window.confirm('Bạn có chắc chắn muốn đăng xuất?')) {
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      setCurrentUser(null);
-      navigate('/'); 
-    }
-  };
-
   const formatPrice = (price) => {
     return new Intl.NumberFormat("vi-VN", {
       style: "currency",
@@ -61,7 +51,6 @@ const BookingHistory = () => {
     }).format(price || 0);
   };
 
-  // ✅ BƯỚC 1 CỦA HỦY: MỞ MODAL VÀ TÍNH TOÁN SỐ LIỆU
   const handleOpenCancelModal = (booking) => {
     const tour = booking.tour;
     if (!tour) return alert("Dữ liệu tour không tồn tại.");
@@ -84,7 +73,8 @@ const BookingHistory = () => {
     else if (diffDays >= 15) { refundInfo = "Hoàn 20% chi phí"; refundPercent = 20; }
     else { refundInfo = "Hủy sát ngày (dưới 15 ngày), KHÔNG hoàn tiền"; refundPercent = 0; }
 
-    // Lưu dữ liệu vào State để hiển thị lên Modal
+    const actualPaidAmount = (booking.total_price * (booking.payment_percent || 100)) / 100;
+
     setCancelModalData({
       bookingId: booking._id,
       tourTitle: tour.title,
@@ -93,11 +83,10 @@ const BookingHistory = () => {
       refundInfo,
       refundPercent,
       totalPrice: booking.total_price,
-      refundAmount: (booking.total_price * refundPercent) / 100
+      refundAmount: (actualPaidAmount * refundPercent) / 100
     });
   };
 
-  // ✅ BƯỚC 2 CỦA HỦY: KHÁCH BẤM XÁC NHẬN TRÊN MODAL -> GỌI API
   const submitCancelBooking = async () => {
     if (!cancelModalData) return;
     try {
@@ -107,11 +96,10 @@ const BookingHistory = () => {
       });
       
       alert(res.data.message || "Đã hủy tour thành công!");
-      setCancelModalData(null); // Đóng Modal
-      fetchHistory(); // Refresh dữ liệu
+      setCancelModalData(null);
+      fetchHistory(); 
       
     } catch (error) {
-      console.error(error);
       alert(error.response?.data?.message || "Đã xảy ra lỗi khi hủy tour.");
     }
   };
@@ -131,7 +119,6 @@ const BookingHistory = () => {
       {cancelModalData && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden transform scale-100 animate-slide-up">
-            {/* Header Modal */}
             <div className="bg-red-50 p-5 border-b border-red-100 flex items-center gap-3">
               <div className="w-10 h-10 bg-red-100 text-red-600 rounded-full flex items-center justify-center text-xl shadow-sm">⚠️</div>
               <div>
@@ -140,7 +127,6 @@ const BookingHistory = () => {
               </div>
             </div>
             
-            {/* Body Modal */}
             <div className="p-6 space-y-4">
               <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
                 <p className="text-sm text-gray-500 mb-1">Tên chuyến đi:</p>
@@ -164,7 +150,6 @@ const BookingHistory = () => {
               </div>
             </div>
 
-            {/* Footer Modal */}
             <div className="p-4 border-t flex justify-end gap-3 bg-gray-50">
               <button 
                 onClick={() => setCancelModalData(null)}
@@ -182,13 +167,9 @@ const BookingHistory = () => {
           </div>
         </div>
       )}
-      {/* ===================== KẾT THÚC MODAL ===================== */}
-
-
-      {/* HEADER PAGE */}
 
       {/* NỘI DUNG CHÍNH */}
-      <div className="max-w-5xl mx-auto px-4">
+      <div className="max-w-5xl mx-auto px-4 mt-8">
         <h1 className="text-3xl font-black text-gray-900 tracking-tight mb-8 flex items-center gap-3">
           ✈️ Lịch sử chuyến đi
         </h1>
@@ -211,12 +192,43 @@ const BookingHistory = () => {
               const isReviewing = reviewingTourId === item.tour?._id;
               const isCanceled = item.status === 'CANCELED';
 
+              let displayRefundPercent = item.refund_percentage;
+              let displayRefundAmount = item.refund_amount;
+
+              if (isCanceled && (displayRefundPercent === undefined || displayRefundPercent === null)) {
+                const cancelDate = new Date(item.updatedAt || new Date());
+                cancelDate.setHours(0, 0, 0, 0);
+                const tourStartDate = new Date(item.tour?.start_date);
+                tourStartDate.setHours(0, 0, 0, 0);
+                
+                const diffDays = Math.ceil((tourStartDate.getTime() - cancelDate.getTime()) / (1000 * 60 * 60 * 24));
+                
+                if (diffDays >= 30) displayRefundPercent = 100;
+                else if (diffDays >= 20) displayRefundPercent = 50;
+                else if (diffDays >= 15) displayRefundPercent = 20;
+                else displayRefundPercent = 0;
+                
+                const actualPaid = (item.total_price * (item.payment_percent || 100)) / 100;
+                displayRefundAmount = (actualPaid * displayRefundPercent) / 100;
+              }
+
+              const paymentPercent = item.payment_percent || 100; 
+              const isDeposit = paymentPercent === 50;
+              const paymentMethodText = item.payment_method === 'CASH' ? 'Tiền mặt' : 'VNPay';
+
+              // LOGIC HIỂN THỊ SỐ LƯỢNG KHÁCH
+              const guestLabels = [];
+              if (item.guest_size?.adult > 0) guestLabels.push(`${item.guest_size.adult} Người lớn`);
+              if (item.guest_size?.child > 0) guestLabels.push(`${item.guest_size.child} Trẻ em`);
+              if (item.guest_size?.infant > 0) guestLabels.push(`${item.guest_size.infant} Em bé`);
+              const guestSizeText = guestLabels.join(", ") || "Chưa xác định";
+
               return (
                 <div key={item._id} className={`bg-white rounded-3xl shadow-sm border overflow-hidden transition-all ${isCanceled ? 'opacity-80' : ''}`}>
                   <div className="flex flex-col md:flex-row">
                     
                     {/* Ảnh Tour */}
-                    <div className="relative w-full md:w-72 h-56 md:h-auto shrink-0">
+                    <div className="relative w-full md:w-72 h-auto shrink-0 min-h-[220px]">
                       {isCanceled && (
                          <div className="absolute inset-0 bg-red-900/40 flex items-center justify-center z-10">
                            <div className="border-4 border-red-500 text-red-500 font-black text-2xl px-4 py-2 transform -rotate-12 bg-white/90 backdrop-blur-sm shadow-xl uppercase tracking-widest rounded-lg">
@@ -234,8 +246,8 @@ const BookingHistory = () => {
                     {/* Thông tin vé */}
                     <div className="p-6 flex-grow flex flex-col justify-between">
                       <div>
-                        <div className="flex justify-between items-start gap-4 mb-2">
-                          <h2 className="text-xl font-bold text-gray-800 line-clamp-2">
+                        <div className="flex justify-between items-start gap-4 mb-3">
+                          <h2 className="text-xl font-bold text-gray-800 line-clamp-2 leading-snug">
                             {item.tour?.title || <span className="text-red-500 italic">Tour đã bị xóa khỏi hệ thống</span>}
                           </h2>
                           <span className="text-xs text-gray-400 font-bold bg-gray-100 px-3 py-1 rounded-full whitespace-nowrap border">
@@ -243,16 +255,23 @@ const BookingHistory = () => {
                           </span>
                         </div>
 
+                        {/* HIỂN THỊ SỐ LƯỢNG VÀ GHẾ */}
                         {item.tour && (
-                          <p className="text-sm text-gray-500 mb-4">
-                            📅 Khởi hành: <span className="text-gray-800 font-bold">{new Date(item.tour.start_date).toLocaleDateString("vi-VN")}</span>
-                          </p>
+                          <div className="bg-gray-50 p-3 rounded-xl border border-gray-100 space-y-1.5 text-sm text-gray-600 mb-4">
+                            <p>📅 Khởi hành: <span className="text-gray-900 font-bold">{new Date(item.tour.start_date).toLocaleDateString("vi-VN")}</span></p>
+                            <p>👥 Số lượng: <span className="text-gray-900 font-bold">{guestSizeText}</span></p>
+                            {item.selected_beds && item.selected_beds.length > 0 ? (
+                               <p>💺 Vị trí đã đặt: <span className="text-blue-600 font-bold">{item.selected_beds.join(", ")}</span></p>
+                            ) : (
+                               <p>💺 Vị trí ghế: <span className="text-gray-500 italic">Hãng bay sắp xếp</span></p>
+                            )}
+                          </div>
                         )}
                       </div>
 
-                      <div className="mt-6 flex justify-between items-end border-t pt-5">
+                      <div className="mt-4 flex justify-between items-end border-t border-dashed pt-5">
                         <div>
-                          <p className="text-[10px] text-gray-400 uppercase font-black mb-1">Tổng tiền thanh toán</p>
+                          <p className="text-[10px] text-gray-400 uppercase font-black mb-1">Tổng tiền tour</p>
                           <p className={`text-2xl font-black ${isTourEnded || isCanceled ? 'text-gray-400 line-through decoration-red-500 decoration-2' : 'text-orange-600'}`}>
                             {formatPrice(item.total_price)}
                           </p>
@@ -262,10 +281,10 @@ const BookingHistory = () => {
                         {isCanceled ? (
                           <div className="flex flex-col items-end gap-2">
                             <span className="bg-red-100 text-red-600 px-4 py-1.5 rounded-lg text-xs font-black uppercase tracking-wider border border-red-200">
-                              Hoàn {item.refund_percentage || 0}% tiền
+                              Hoàn {displayRefundPercent}% tiền
                             </span>
                             <span className="text-sm font-bold text-red-500">
-                              +{formatPrice(item.refund_amount || 0)}
+                              +{formatPrice(displayRefundAmount)}
                             </span>
                           </div>
                         ) : isTourEnded ? (
@@ -280,11 +299,13 @@ const BookingHistory = () => {
                           </div>
                         ) : (
                           <div className="flex flex-col items-end gap-3">
-                            <span className="bg-green-50 text-green-600 px-4 py-1.5 rounded-lg text-xs font-black uppercase tracking-wider border border-green-200 shadow-sm">
-                              Thành công
-                            </span>
+                            <div className="text-right">
+                              <span className={`px-4 py-1.5 rounded-lg text-xs font-black uppercase tracking-wider border shadow-sm ${isDeposit ? 'bg-orange-50 text-orange-600 border-orange-200' : 'bg-green-50 text-green-600 border-green-200'}`}>
+                                {isDeposit ? 'Đã cọc 50%' : 'Thành công'}
+                              </span>
+                              <p className="text-[11px] text-gray-400 font-bold mt-2.5">TT qua: {paymentMethodText}</p>
+                            </div>
                             
-                            {/* NÚT YÊU CẦU HỦY GỌI MODAL THAY VÌ CONFIRM */}
                             <button 
                               onClick={() => handleOpenCancelModal(item)}
                               className="text-xs font-bold text-red-500 hover:text-red-700 hover:underline transition"
