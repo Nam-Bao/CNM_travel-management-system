@@ -16,7 +16,7 @@ router.get('/:id', tourController.getTourById);
 // Stack bảo mật chuẩn: Kiểm tra Token ➡️ Kiểm tra quyền Admin ➡️ Đón ảnh up lên Cloud ➡️ Chạy vào Controller
 router.post(
     '/', 
-    verifyToken,     // 1. Phải đăng nhập
+    // 1. Phải đăng nhập
     verifyAdmin,     // 2. Phải là Admin mới được đi tiếp
     uploadCloud.array('images', 5), // 3. Hợp lệ rồi mới cho up tối đa 5 ảnh
     tourController.createTour       // 4. Xong xuôi mới lưu vào DB

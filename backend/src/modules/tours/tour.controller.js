@@ -1,28 +1,35 @@
 const Tour = require('./tour.model');
 
 // [POST] /api/tours - Thêm Tour mới (Chỉ Admin)
+// [POST] /api/tours - Thêm Tour mới (Chỉ Admin)
 const createTour = async (req, res) => {
     try {
+        console.log("=== BẮT ĐẦU TẠO TOUR ===");
+        console.log("1. Dữ liệu gửi lên:", req.body);
+        
         const tourData = { ...req.body };
 
-        // 1. Dịch ngược chuỗi chữ thành Object / Array
         if (req.body.price) tourData.price = JSON.parse(req.body.price);
         if (req.body.itinerary) tourData.itinerary = JSON.parse(req.body.itinerary);
+        console.log("2. Parse JSON thành công!");
 
-        // 2. Gom tất cả link ảnh mới tải lên vào mảng images
         tourData.images = []; 
         if (req.files && req.files.length > 0) {
-            tourData.images = req.files.map(file => file.path); // Lấy link Cloudinary của từng ảnh
-        } 
-        else if (req.body.images) {
+            tourData.images = req.files.map(file => file.path);
+        } else if (req.body.images) {
             tourData.images = Array.isArray(req.body.images) ? req.body.images : [req.body.images];
         }
+        console.log("3. Xử lý ảnh thành công!");
 
         const newTour = new Tour(tourData);
+        console.log("4. Chuẩn bị lưu vào MongoDB...");
         const savedTour = await newTour.save();
+        console.log("5. Lưu thành công!");
         
         res.status(201).json({ status: 'success', message: 'Thêm Tour thành công', data: savedTour });
     } catch (error) {
+        // 🔥 IN LỖI THẬT SỰ RA TERMINAL CỦA BACKEND 🔥
+        console.log("❌ LỖI RỒI CẬU ƠI:", error); 
         res.status(400).json({ status: 'error', message: error.message });
     }
 };
