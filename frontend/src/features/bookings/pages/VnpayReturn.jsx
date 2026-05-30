@@ -16,6 +16,11 @@ const VnpayReturn = () => {
                 
                 if (responseCode === '00') {
                     // Thành công: Cập nhật trạng thái thành công ở đây (Nếu Backend chưa làm việc này)
+                    const token = localStorage.getItem('token');
+                    // Phải có dòng này thì Backend mới biết mà gửi mail!
+                    await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/payment/vnpay/vnpay_return?${searchParams.toString()}`, {
+                        headers: { Authorization: `Bearer ${token}` }
+                    });
                     setStatus('success');
                     setMessage('Thanh toán thành công! Chúc bạn có một chuyến đi tuyệt vời.');
                 } else {
