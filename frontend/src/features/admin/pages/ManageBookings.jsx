@@ -21,7 +21,7 @@ const ManageBookings = () => {
   const fetchAllBookings = async () => {
     const token = localStorage.getItem("token");
     try {
-      const res = await axios.get("http://localhost:5000/api/bookings", {
+      const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/bookings`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setBookings(res.data.data || res.data || []);
@@ -40,7 +40,7 @@ const ManageBookings = () => {
     if (window.confirm("Xác nhận khách hàng đã thanh toán 50% số tiền còn lại?")) {
       try {
         const token = localStorage.getItem("token");
-        await axios.put(`http://localhost:5000/api/bookings/${bookingId}/complete-payment`, {}, {
+        await axios.put(`${import.meta.env.VITE_API_BASE_URL}/api/bookings/${bookingId}/complete-payment`, {}, {
           headers: { Authorization: `Bearer ${token}` }
         });
         alert("✅ Cập nhật thanh toán 100% thành công!");
@@ -56,7 +56,7 @@ const ManageBookings = () => {
     if (window.confirm("⚠️ CẢNH BÁO: Hủy đơn hàng này do khách không thanh toán phần còn lại?")) {
       try {
         const token = localStorage.getItem("token");
-        await axios.put(`http://localhost:5000/api/bookings/${bookingId}/cancel`, {}, {
+        await axios.put(`${import.meta.env.VITE_API_BASE_URL}/api/bookings/${bookingId}/cancel`, {}, {
           headers: { Authorization: `Bearer ${token}` }
         });
         alert("✅ Đã hủy đơn hàng và hoàn trả lại chỗ trống thành công!");

@@ -14,7 +14,7 @@ const ReviewForm = ({ tourId }) => {
 
   const fetchReviews = async () => {
     try {
-      const res = await axios.get(`http://localhost:5000/api/reviews/${tourId}`);
+      const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/reviews/${tourId}`);
       const fetchedReviews = res.data.data || [];
       setReviews(fetchedReviews);
       return fetchedReviews;
@@ -42,7 +42,7 @@ const ReviewForm = ({ tourId }) => {
 
     try {
       const res = await axios.get(
-        `http://localhost:5000/api/bookings/my-bookings`,
+        `${import.meta.env.VITE_API_BASE_URL}/api/bookings/my-bookings`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
@@ -78,7 +78,7 @@ const ReviewForm = ({ tourId }) => {
     setLoading(true);
     try {
       await axios.post(
-        `http://localhost:5000/api/reviews`,
+        `${import.meta.env.VITE_API_BASE_URL}/api/reviews`,
         { tourId, rating, comment },
         { headers: { Authorization: `Bearer ${token}` } }
       );

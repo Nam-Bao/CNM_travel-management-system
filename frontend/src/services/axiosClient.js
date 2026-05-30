@@ -2,7 +2,7 @@ import axios from 'axios';
 
 // 1. Tạo một instance của Axios với cấu hình mặc định
 const axiosClient = axios.create({
-    baseURL: 'http://localhost:5000/api', // Link gốc của Backend
+    baseURL: `${import.meta.env.VITE_API_BASE_URL}/api`, // Link gốc của Backend
     headers: {
         'Content-Type': 'application/json',
     },

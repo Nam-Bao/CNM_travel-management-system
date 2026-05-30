@@ -12,7 +12,7 @@ const HotelDetail = () => {
     const fetchDetail = async () => {
       try {
         setLoading(true);
-        const res = await axios.get(`http://localhost:5000/api/hotels/${id}`);
+        const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/hotels/${id}`);
         setHotel(res.data);
       } catch (err) {
         console.error("Lỗi:", err);

@@ -91,7 +91,7 @@ const BookingHistory = () => {
     if (!cancelModalData) return;
     try {
       const token = localStorage.getItem('token');
-      const res = await axios.put(`http://localhost:5000/api/bookings/${cancelModalData.bookingId}/cancel`, {}, {
+      const res = await axios.put(`${import.meta.env.VITE_API_BASE_URL}/api/bookings/${cancelModalData.bookingId}/cancel`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
