@@ -192,10 +192,11 @@ const BookingHistory = () => {
               const isReviewing = reviewingTourId === item.tour?._id;
               const isCanceled = item.status === 'CANCELED';
 
-              let displayRefundPercent = item.refund_percentage;
-              let displayRefundAmount = item.refund_amount;
+              // LUÔN TỰ ĐỘNG TÍNH TOÁN LẠI KHI TOUR BỊ HỦY (Bỏ qua số 0 mặc định của DB)
+              let displayRefundPercent = 0;
+              let displayRefundAmount = 0;
 
-              if (isCanceled && (displayRefundPercent === undefined || displayRefundPercent === null)) {
+              if (isCanceled) {
                 const cancelDate = new Date(item.updatedAt || new Date());
                 cancelDate.setHours(0, 0, 0, 0);
                 const tourStartDate = new Date(item.tour?.start_date);
@@ -208,13 +209,14 @@ const BookingHistory = () => {
                 else if (diffDays >= 15) displayRefundPercent = 20;
                 else displayRefundPercent = 0;
                 
+                // Tiền thực tế khách đã trả (dựa theo % cọc hoặc thanh toán đủ)
                 const actualPaid = (item.total_price * (item.payment_percent || 100)) / 100;
                 displayRefundAmount = (actualPaid * displayRefundPercent) / 100;
               }
 
               const paymentPercent = item.payment_percent || 100; 
               const isDeposit = paymentPercent === 50;
-              const paymentMethodText = item.payment_method === 'CASH' ? 'Tiền mặt' : 'VNPay';
+              // const paymentMethodText = item.payment_method === 'CASH' ? 'Tiền mặt' : 'VNPay';
 
               // LOGIC HIỂN THỊ SỐ LƯỢNG KHÁCH
               const guestLabels = [];
@@ -303,7 +305,7 @@ const BookingHistory = () => {
                               <span className={`px-4 py-1.5 rounded-lg text-xs font-black uppercase tracking-wider border shadow-sm ${isDeposit ? 'bg-orange-50 text-orange-600 border-orange-200' : 'bg-green-50 text-green-600 border-green-200'}`}>
                                 {isDeposit ? 'Đã cọc 50%' : 'Thành công'}
                               </span>
-                              <p className="text-[11px] text-gray-400 font-bold mt-2.5">TT qua: {paymentMethodText}</p>
+                              {/* <p className="text-[11px] text-gray-400 font-bold mt-2.5">TT qua: {paymentMethodText}</p> */}
                             </div>
                             
                             <button 
