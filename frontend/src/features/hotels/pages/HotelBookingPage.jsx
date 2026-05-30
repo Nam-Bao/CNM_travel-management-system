@@ -43,7 +43,7 @@ const HotelBookingPage = () => {
       };
 
       // Gọi API lưu vào DB (Mình sẽ viết API này ở bước 2)
-      await axios.post("http://localhost:5000/api/hotel-bookings", payload, {
+      await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/hotel-bookings`, payload, {
         headers: { Authorization: `Bearer ${token}` },
       });
 

@@ -43,7 +43,7 @@ const BookingPayment = () => {
       intervalId = setInterval(async () => {
         try {
             const token = localStorage.getItem("token");
-            const res = await axios.get(`http://localhost:5000/api/bookings/${createdBooking._id}`, {
+            const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/bookings/${createdBooking._id}`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             
@@ -89,7 +89,7 @@ const BookingPayment = () => {
 
       if (paymentMethod === "VNPAY") {
         const vnpayRes = await axios.post(
-          "http://localhost:5000/api/payment/vnpay/create_payment_url",
+          `${import.meta.env.VITE_API_BASE_URL}/api/payment/vnpay/create_payment_url`,
           { amount: amountToPay, bookingId: newBooking._id, bankCode: "NCB" },
           { headers: { Authorization: `Bearer ${token}` } }
         );

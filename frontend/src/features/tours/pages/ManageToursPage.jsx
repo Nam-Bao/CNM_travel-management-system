@@ -74,7 +74,7 @@ const ManageToursPage = () => {
         setLoadingReviews(true);
         try {
             // Gọi API lấy đánh giá của tour này
-            const res = await axios.get(`http://localhost:5000/api/reviews/${tour._id}`);
+            const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/reviews/${tour._id}`);
             setTourReviews(res.data.data || []);
         } catch (err) {
             console.error("Lỗi tải đánh giá:", err);

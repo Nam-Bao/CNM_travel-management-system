@@ -27,7 +27,7 @@ const DashboardPage = () => {
         const [tourRes, userRes, bookingRes] = await Promise.all([
           tourApi.getAllTours(),
           userApi.getAllUsers(),
-          axios.get("http://localhost:5000/api/bookings", { headers: { Authorization: `Bearer ${token}` } }),
+          axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/bookings`, { headers: { Authorization: `Bearer ${token}` } }),
         ]);
 
         const tours = tourRes.data;

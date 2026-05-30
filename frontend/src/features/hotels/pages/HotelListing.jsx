@@ -29,7 +29,7 @@ const HotelListing = () => {
     const fetchHotels = async () => {
       setLoading(true);
       try {
-        const res = await axios.get(`http://localhost:5000/api/hotels`);
+        const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/hotels`);
         const data = Array.isArray(res.data) ? res.data : [];
         setHotels(data);
         setFilteredHotels(data);
