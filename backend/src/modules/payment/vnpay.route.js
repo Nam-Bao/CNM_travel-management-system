@@ -6,5 +6,6 @@ const vietqrController = require('./vietqr.controller');
 // API: POST /api/payment/vnpay/create_payment_url
 router.post('/vnpay/create_payment_url', vnpayController.createPaymentUrl);
 router.post('/sepay-webhook', vietqrController.verifySePayWebhook);
+router.get('/vnpay_return', vnpayController.vnpayReturn);
 
 module.exports = router;

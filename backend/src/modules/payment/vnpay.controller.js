@@ -1,6 +1,9 @@
 const crypto = require('crypto');
 const qs = require('qs');
 const moment = require('moment');
+const Booking = require("../bookings/booking.model");
+const Tour = require("../tours/tour.model");
+const sendTicketEmail = require("../../utils/sendEmail");
 
 exports.createPaymentUrl = async (req, res) => {
     try {
@@ -79,3 +82,63 @@ function sortObject(obj) {
     }
     return sorted;
 }
+
+exports.vnpayReturn = async (req, res) => {
+    try {
+        let vnp_Params = req.query;
+        let secureHash = vnp_Params['vnp_SecureHash'];
+
+        delete vnp_Params['vnp_SecureHash'];
+        delete vnp_Params['vnp_SecureHashType'];
+
+        vnp_Params = sortObject(vnp_Params);
+        let secretKey = process.env.VNP_HASH_SECRET;
+        let signData = qs.stringify(vnp_Params, { encode: false });
+        let hmac = crypto.createHmac("sha512", secretKey);
+        let signed = hmac.update(new Buffer.from(signData, 'utf-8')).digest("hex");
+
+        if (secureHash === signed) {
+            // Xác thực chữ ký thành công
+            if (vnp_Params['vnp_ResponseCode'] === '00') {
+                const bookingId = vnp_Params['vnp_TxnRef'];
+                
+                // 1. Tìm đơn hàng
+                const booking = await Booking.findById(bookingId).populate("tour");
+                
+                if (booking && booking.status === "pending") {
+                    // 2. Cập nhật thành công
+                    booking.status = "SUCCESS";
+                    booking.payment_percent = 100; // Hoặc tùy logic của bạn
+                    await booking.save();
+
+                    // 3. 🔥 GỬI EMAIL VÉ ĐIỆN TỬ TẠI ĐÂY 🔥
+                    try {
+                        const emailData = {
+                            _id: booking._id,
+                            tour: { title: booking.tour.title, start_date: booking.tour.start_date },
+                            contact_info: booking.contact_info,
+                            guest_size: booking.guest_size,
+                            selected_beds: booking.selected_beds,
+                            total_price: booking.total_price,
+                            payment_percent: booking.payment_percent
+                        };
+                        await sendTicketEmail(emailData);
+                        console.log("📧 Đã gửi Vé điện tử VNPay cho khách hàng!");
+                    } catch (mailError) {
+                        console.error("⚠️ Lỗi gửi email VNPay:", mailError);
+                    }
+                }
+                
+                // Báo cho Frontend biết là API đã xử lý xong
+                return res.status(200).json({ code: "00", message: "Success" });
+            } else {
+                return res.status(200).json({ code: "24", message: "Giao dịch không thành công" });
+            }
+        } else {
+            return res.status(200).json({ code: "97", message: "Chữ ký không hợp lệ" });
+        }
+    } catch (error) {
+        console.error("Lỗi xử lý VNPay Return:", error);
+        return res.status(500).json({ message: "Lỗi Server" });
+    }
+};
