@@ -58,9 +58,9 @@ const Header = () => {
             Khách sạn
           </Link>
 
-          <Link to="/tours" className="hover:text-blue-600 transition">
+          {/* <Link to="/tours" className="hover:text-blue-600 transition">
             Khám phá Tour
-          </Link>
+          </Link> */}
           <Link to="/about" className="hover:text-blue-600 transition">
             Về chúng tôi
           </Link>

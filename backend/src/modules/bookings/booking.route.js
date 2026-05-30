@@ -11,6 +11,10 @@ router.get("/my-bookings", verifyToken, bookingController.getMyBookings);
 
 router.get("/", verifyToken, bookingController.getAllBookings);
 
+router.get('/:id', verifyToken, bookingController.getBookingById);
+
 router.put("/:id/cancel", bookingController.cancelBooking);
+
+router.put('/:id/complete-payment', verifyToken, bookingController.completePayment);
 
 module.exports = router;

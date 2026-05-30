@@ -21,6 +21,8 @@ const userRoutes = require("./modules/users/user.route");
 const bookingRoutes = require("./modules/bookings/booking.route");
 const reviewRoutes = require("./modules/reviews/review.route");
 const paymentRoutes = require("./modules/payment/vnpay.route");
+const initReminderCronJob = require("./jobs/reminderJob");
+initReminderCronJob();
 
 app.use("/api/auth", authRoutes);
 app.use("/api/tours", tourRoutes);
