@@ -15,7 +15,6 @@ const ManageBookings = () => {
   const [tourStatusFilter, setTourStatusFilter] = useState("ALL");
   const [showDeadlineOnly, setShowDeadlineOnly] = useState(location.state?.filterDeadline || false);
 
-  // 🔥 THÊM STATE QUẢN LÝ MODAL
   const [selectedBooking, setSelectedBooking] = useState(null);
 
   const fetchAllBookings = async () => {
@@ -44,7 +43,7 @@ const ManageBookings = () => {
           headers: { Authorization: `Bearer ${token}` }
         });
         alert("✅ Cập nhật thanh toán 100% thành công!");
-        setSelectedBooking(null); // Đóng modal sau khi thao tác
+        setSelectedBooking(null);
         fetchAllBookings(); 
       } catch (err) {
         alert("Lỗi khi cập nhật thanh toán!");
@@ -60,7 +59,7 @@ const ManageBookings = () => {
           headers: { Authorization: `Bearer ${token}` }
         });
         alert("✅ Đã hủy đơn hàng và hoàn trả lại chỗ trống thành công!");
-        setSelectedBooking(null); // Đóng modal sau khi thao tác
+        setSelectedBooking(null);
         fetchAllBookings(); 
       } catch (err) {
         alert("Lỗi khi hủy đơn hàng!");
@@ -114,21 +113,33 @@ const ManageBookings = () => {
     const matchSearch = booking._id.toLowerCase().includes(searchLower) || (booking.tour?.title?.toLowerCase() || "").includes(searchLower) || (booking.contact_info?.phone || "").includes(searchLower);
 
     if (showDeadlineOnly) {
-        if (booking.status === "CANCELED" || booking.payment_percent !== 50) return false;
+        if (booking.status === "CANCELED" || booking.status === "cancelled" || booking.payment_percent !== 50) return false;
         if (!booking.tour?.start_date) return false;
         const { diffDaysToTour } = getDeadlineInfo(booking.tour.start_date);
         return matchSearch && (diffDaysToTour >= 0 && diffDaysToTour <= 10);
     }
 
+    // 1. Logic Lọc trạng thái Thanh Toán (Bổ sung Chờ thanh toán)
     let matchPayment = true;
     if (paymentFilter !== "ALL") {
-      if (paymentFilter === "PAID_100") matchPayment = booking.payment_percent === 100;
-      else if (paymentFilter === "PAID_50") matchPayment = booking.payment_percent === 50;
+      if (paymentFilter === "PENDING_PAYMENT") {
+          matchPayment = booking.status === "pending";
+      } else if (paymentFilter === "PAID_100") {
+          matchPayment = booking.payment_percent === 100 && booking.status !== "pending" && booking.status !== "CANCELED" && booking.status !== "cancelled";
+      } else if (paymentFilter === "PAID_50") {
+          matchPayment = booking.payment_percent === 50 && booking.status !== "pending" && booking.status !== "CANCELED" && booking.status !== "cancelled";
+      }
     }
 
+    // 2. Logic Lọc trạng thái Chuyến đi (Bổ sung Đã hủy)
     let matchTourStatus = true;
     if (tourStatusFilter !== "ALL") {
-      matchTourStatus = getBookingStatus(booking.tour) === tourStatusFilter;
+      if (tourStatusFilter === "CANCELED") {
+          matchTourStatus = booking.status === "CANCELED" || booking.status === "cancelled";
+      } else {
+          // Chỉ lấy các tour thỏa điều kiện ngày tháng NẾU đơn đó chưa bị hủy
+          matchTourStatus = getBookingStatus(booking.tour) === tourStatusFilter && booking.status !== "CANCELED" && booking.status !== "cancelled";
+      }
     }
 
     return matchSearch && matchPayment && matchTourStatus;
@@ -164,25 +175,31 @@ const ManageBookings = () => {
               <span className="absolute left-3 top-2.5">🔍</span>
               <input type="text" placeholder="Tìm mã đơn, tên khách..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full pl-10 pr-4 py-2.5 rounded-lg border outline-none text-sm" />
             </div>
+            
+            {/* THÊM OPTION "CHỜ THANH TOÁN" */}
             <div className="w-full md:w-56">
               <select value={paymentFilter} onChange={(e) => setPaymentFilter(e.target.value)} className="w-full px-4 py-2.5 rounded-lg border outline-none text-sm bg-white cursor-pointer font-bold">
                 <option value="ALL">Trạng thái thanh toán</option>
                 <option value="PAID_100">Đã thanh toán 100%</option>
                 <option value="PAID_50">Đã cọc 50%</option>
+                <option value="PENDING_PAYMENT">Chờ thanh toán</option>
               </select>
             </div>
+
+            {/* THÊM OPTION "ĐÃ HỦY" */}
             <div className="w-full md:w-56">
               <select value={tourStatusFilter} onChange={(e) => setTourStatusFilter(e.target.value)} className="w-full px-4 py-2.5 rounded-lg border outline-none text-sm bg-white cursor-pointer font-bold">
                 <option value="ALL">Trạng thái chuyến đi</option>
                 <option value="PENDING">Chưa khởi hành</option>
                 <option value="ONGOING">Đang thực hiện</option>
                 <option value="COMPLETED">Đã hoàn thành</option>
+                <option value="CANCELED">Đã hủy</option>
               </select>
             </div>
           </div>
         </div>
 
-        {/* 🔥 BẢNG TỔNG QUAN RÚT GỌN 🔥 */}
+        {/* BẢNG TỔNG QUAN */}
         <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
           <table className="w-full text-left text-sm table-fixed">
             <thead className="bg-gray-100 text-gray-600 font-bold uppercase text-[11px]">
@@ -196,30 +213,37 @@ const ManageBookings = () => {
             </thead>
             <tbody className="divide-y divide-gray-100">
               {filteredBookings.map((booking) => {
-                const isDeposit = booking.payment_percent === 50 && booking.status !== "CANCELED";
+                const isDeposit = booking.payment_percent === 50 && booking.status !== "CANCELED" && booking.status !== "cancelled" && booking.status !== "pending";
                 const { daysToDeadline } = isDeposit && booking.tour ? getDeadlineInfo(booking.tour.start_date) : { daysToDeadline: null };
+                const isCanceled = booking.status === "CANCELED" || booking.status === "cancelled";
+                const isPending = booking.status === "pending";
 
                 return (
-                  <tr key={booking._id} className="hover:bg-blue-50 transition cursor-pointer" onClick={() => setSelectedBooking(booking)}>
+                  <tr key={booking._id} className={`hover:bg-blue-50 transition cursor-pointer ${isCanceled ? 'opacity-60 bg-gray-50' : ''}`} onClick={() => setSelectedBooking(booking)}>
                     <td className="px-4 py-3">
-                      <p className="font-bold text-gray-800 text-xs">#{booking._id.slice(-6).toUpperCase()}</p>
+                      <p className={`font-bold text-xs ${isCanceled ? 'text-gray-500 line-through' : 'text-gray-800'}`}>#{booking._id.slice(-6).toUpperCase()}</p>
                       <p className="text-[10px] text-gray-400 mt-0.5">{formatDate(booking.createdAt)}</p>
                     </td>
                     <td className="px-4 py-3">
-                      <p className="font-bold text-gray-800 truncate">{booking.contact_info?.full_name}</p>
+                      <p className={`font-bold truncate ${isCanceled ? 'text-gray-500' : 'text-gray-800'}`}>{booking.contact_info?.full_name}</p>
                       <p className="text-[10px] text-gray-500 mt-0.5">📞 {booking.contact_info?.phone}</p>
                     </td>
                     <td className="px-4 py-3 pr-4">
-                      <p className="font-bold text-blue-700 truncate">{booking.tour?.title}</p>
+                      <p className={`font-bold truncate ${isCanceled ? 'text-gray-500' : 'text-blue-700'}`}>{booking.tour?.title}</p>
                       <div className="mt-1 flex items-center gap-2">
                         {renderStatusBadge(booking)}
                         {isDeposit && daysToDeadline <= 0 && <span className="bg-red-500 text-white px-1.5 py-0.5 rounded text-[9px] font-bold animate-pulse">Quá hạn</span>}
                       </div>
                     </td>
                     <td className="px-4 py-3">
-                      <p className="font-black text-gray-800">{formatPrice(booking.total_price)}</p>
-                      <p className={`text-[10px] font-bold uppercase mt-0.5 ${isDeposit ? 'text-orange-500' : booking.status === 'CANCELED' ? 'text-red-500' : 'text-green-500'}`}>
-                        {booking.status === 'CANCELED' ? 'Đã hủy' : isDeposit ? 'Đã cọc 50%' : 'Đã thu 100%'}
+                      <p className={`font-black ${isCanceled ? 'text-gray-500' : 'text-gray-800'}`}>{formatPrice(booking.total_price)}</p>
+                      {/* Đổi màu text linh hoạt dựa trên trạng thái */}
+                      <p className={`text-[10px] font-bold uppercase mt-0.5 ${
+                          isCanceled ? 'text-red-500' : 
+                          isPending ? 'text-yellow-600' : 
+                          isDeposit ? 'text-orange-500' : 'text-green-500'
+                      }`}>
+                        {isCanceled ? 'Đã hủy' : isPending ? 'Chờ thanh toán' : isDeposit ? 'Đã cọc 50%' : 'Đã thu 100%'}
                       </p>
                     </td>
                     <td className="px-4 py-3 text-center">
@@ -238,12 +262,11 @@ const ManageBookings = () => {
         </div>
       </div>
 
-      {/* 🔥 MODAL CHI TIẾT ĐƠN HÀNG 🔥 */}
+      {/* MODAL CHI TIẾT */}
       {selectedBooking && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto animate-slide-up">
             
-            {/* Header Modal */}
             <div className="sticky top-0 bg-white border-b px-6 py-4 flex justify-between items-center z-10">
               <div>
                 <h2 className="text-xl font-black text-gray-800">
@@ -256,11 +279,9 @@ const ManageBookings = () => {
               </button>
             </div>
 
-            {/* Nội dung Modal */}
             <div className="p-6 space-y-6">
               
-              {/* Cảnh báo nợ (Nếu có) */}
-              {selectedBooking.payment_percent === 50 && selectedBooking.status !== "CANCELED" && (
+              {selectedBooking.payment_percent === 50 && selectedBooking.status !== "CANCELED" && selectedBooking.status !== "cancelled" && selectedBooking.status !== "pending" && (
                 <div className="bg-orange-50 border border-orange-200 p-4 rounded-xl flex items-start gap-3">
                   <span className="text-2xl">⚠️</span>
                   <div>
@@ -278,7 +299,6 @@ const ManageBookings = () => {
               )}
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Cột 1: Thông tin khách & Thanh toán */}
                 <div className="space-y-6">
                   <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
                     <h3 className="font-black text-gray-700 mb-3 uppercase text-xs tracking-wider">👤 Thông tin người đặt</h3>
@@ -296,13 +316,20 @@ const ManageBookings = () => {
                         <span className="text-blue-600">Tổng tiền Tour:</span>
                         <span className="font-black text-lg text-blue-700">{formatPrice(selectedBooking.total_price)}</span>
                       </div>
-                      <p><span className="text-gray-600">Trạng thái nộp:</span> <span className={`font-black uppercase ${selectedBooking.payment_percent === 50 ? 'text-orange-600' : 'text-green-600'}`}>{selectedBooking.payment_percent === 50 ? 'Đã cọc 50%' : 'Đã thanh toán đủ 100%'}</span></p>
-                      <p><span className="text-gray-600">Hình thức CK:</span> <span className="font-bold">{selectedBooking.payment_method === 'CASH' ? 'Tiền mặt' : selectedBooking.payment_method === 'VIETQR' ? 'VietQR' : 'VNPay'}</span></p>
+                      <p><span className="text-gray-600">Trạng thái nộp:</span> <span className={`font-black uppercase ${
+                          selectedBooking.status === 'CANCELED' || selectedBooking.status === 'cancelled' ? 'text-red-600' :
+                          selectedBooking.status === 'pending' ? 'text-yellow-600' : 
+                          selectedBooking.payment_percent === 50 ? 'text-orange-600' : 'text-green-600'
+                      }`}>
+                          {selectedBooking.status === 'CANCELED' || selectedBooking.status === 'cancelled' ? 'Đã hủy' : 
+                           selectedBooking.status === 'pending' ? 'Chờ thanh toán' : 
+                           selectedBooking.payment_percent === 50 ? 'Đã cọc 50%' : 'Đã thanh toán đủ 100%'}
+                      </span></p>
+                      <p><span className="text-gray-600">Hình thức:</span> <span className="font-bold">{selectedBooking.payment_method === 'CASH' ? 'Tiền mặt' : selectedBooking.payment_method === 'VIETQR' ? 'VietQR' : 'VNPay'}</span></p>
                     </div>
                   </div>
                 </div>
 
-                {/* Cột 2: Thông tin Tour */}
                 <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
                   <h3 className="font-black text-gray-700 mb-3 uppercase text-xs tracking-wider">🗺️ Thông tin Chuyến đi</h3>
                   <div className="space-y-3 text-sm">
@@ -318,7 +345,7 @@ const ManageBookings = () => {
                     </div>
                     <div className="bg-white border p-3 rounded-lg mt-3">
                       <span className="text-gray-500 text-xs block mb-1">Vị trí ghế đã chọn:</span>
-                      <span className="font-black text-blue-600 text-lg">
+                      <span className={`font-black text-lg ${selectedBooking.status === 'CANCELED' || selectedBooking.status === 'cancelled' ? 'text-gray-400 line-through' : 'text-blue-600'}`}>
                         {selectedBooking.selected_beds?.length > 0 ? selectedBooking.selected_beds.join(", ") : "Chưa chọn (Hãng bay tự xếp)"}
                       </span>
                     </div>
@@ -327,18 +354,21 @@ const ManageBookings = () => {
               </div>
             </div>
 
-            {/* Footer Modal: Các nút thao tác */}
             <div className="bg-gray-50 p-4 border-t flex justify-end gap-3 rounded-b-2xl">
-              {selectedBooking.payment_percent === 50 && selectedBooking.status !== "CANCELED" && (
-                <>
-                  <button onClick={() => handleCancelUnpaidBooking(selectedBooking._id)} className="bg-white text-red-600 border border-red-200 hover:bg-red-50 font-bold px-5 py-2.5 rounded-lg text-sm transition">
-                    ✖ Hủy đơn (Khách bỏ cọc)
-                  </button>
-                  <button onClick={() => handleMarkAsFullyPaid(selectedBooking._id)} className="bg-green-600 text-white hover:bg-green-700 shadow-md font-bold px-5 py-2.5 rounded-lg text-sm transition">
-                    ✅ Xác nhận thu đủ 100%
-                  </button>
-                </>
+              {/* Nút hủy đơn: Dành cho đơn cọc 50% HOẶC đơn đang pending */}
+              {(selectedBooking.status === "pending" || (selectedBooking.payment_percent === 50 && selectedBooking.status !== "CANCELED" && selectedBooking.status !== "cancelled")) && (
+                <button onClick={() => handleCancelUnpaidBooking(selectedBooking._id)} className="bg-white text-red-600 border border-red-200 hover:bg-red-50 font-bold px-5 py-2.5 rounded-lg text-sm transition">
+                  ✖ Hủy đơn
+                </button>
               )}
+
+              {/* Nút thu tiền: Dành cho đơn cọc 50% */}
+              {selectedBooking.payment_percent === 50 && selectedBooking.status !== "CANCELED" && selectedBooking.status !== "cancelled" && selectedBooking.status !== "pending" && (
+                <button onClick={() => handleMarkAsFullyPaid(selectedBooking._id)} className="bg-green-600 text-white hover:bg-green-700 shadow-md font-bold px-5 py-2.5 rounded-lg text-sm transition">
+                  ✅ Xác nhận thu đủ 100%
+                </button>
+              )}
+              
               <button onClick={() => setSelectedBooking(null)} className="bg-gray-200 text-gray-700 hover:bg-gray-300 font-bold px-5 py-2.5 rounded-lg text-sm transition ml-2">
                 Đóng
               </button>
