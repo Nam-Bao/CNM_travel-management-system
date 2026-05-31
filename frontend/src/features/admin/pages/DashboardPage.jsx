@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { useNavigate } from "react-router-dom"; // 🔥 Import thêm useNavigate
+import { useNavigate } from "react-router-dom";
 import tourApi from "../../tours/api/tourApi";
 import userApi from "../../users/api/userApi";
 import axios from "axios";
@@ -9,16 +9,60 @@ import {
 } from "recharts";
 
 const DashboardPage = () => {
-  const navigate = useNavigate(); // 🔥 Khởi tạo navigate
+  const navigate = useNavigate();
   const [stats, setStats] = useState({
     totalTours: 0, openTours: 0, totalUsers: 0, totalBookings: 0, revenue: 0,
   });
 
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
-
-  // 🔥 THÊM STATE LƯU SỐ LƯỢNG ĐƠN SẮP HẾT HẠN
   const [deadlineCount, setDeadlineCount] = useState(0);
+
+  // 🔥 HÀM TÍNH DOANH THU THỰC TẾ (Đã đồng bộ 100% với file BookingHistory.jsx) 🔥
+  const calculateActualRevenue = (b) => {
+    // 1. Đơn chưa thanh toán -> Doanh thu = 0
+    if (b.status === 'pending') return 0;
+
+    // 2. Tính số tiền khách đã đóng thực tế
+    const actualPaid = (b.total_price * (b.payment_percent || 100)) / 100;
+
+    // 3. Xử lý trường hợp đơn bị Hủy
+    if (b.status === 'CANCELED' || b.status === 'cancelled') {
+        
+        // Nếu Backend của bạn có lưu số tiền hoàn vào DB thì dùng luôn:
+        if (b.refund_amount !== undefined) {
+            return actualPaid - b.refund_amount;
+        }
+
+        // Tự động tính tiền hoàn dựa trên số ngày (Đồng bộ với BookingHistory.jsx)
+        if (b.tour && b.tour.start_date) {
+            const cancelDate = new Date(b.updatedAt || b.createdAt);
+            cancelDate.setHours(0, 0, 0, 0); 
+            const startDate = new Date(b.tour.start_date);
+            startDate.setHours(0, 0, 0, 0);
+            
+            const diffDays = Math.ceil((startDate.getTime() - cancelDate.getTime()) / (1000 * 60 * 60 * 24));
+            
+            let refundRate = 0;
+            if (diffDays >= 30) {
+                refundRate = 1.0; // Hoàn 100%
+            } else if (diffDays >= 20) {
+                refundRate = 0.5; // Hoàn 50%
+            } else if (diffDays >= 15) {
+                refundRate = 0.2; // Hoàn 20%
+            } else {
+                refundRate = 0;   // Dưới 15 ngày không hoàn
+            }
+            
+            const refundAmount = actualPaid * refundRate;
+            return actualPaid - refundAmount; // Doanh thu thực = Tiền đã đóng - Tiền đã hoàn
+        }
+        return 0; // Nếu bị hủy mà lỗi không có ngày tháng, mặc định xem như trả lại hết
+    }
+
+    // 4. Nếu đơn SUCCESS bình thường -> Lấy trọn tiền đã đóng
+    return actualPaid;
+  };
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -41,16 +85,12 @@ const DashboardPage = () => {
 
         const openToursCount = tours.filter(tour => new Date(tour.start_date) > today).length;
 
-        const totalRevenue = bookingsData.reduce((sum, b) => {
-          const actualPaid = (b.total_price * (b.payment_percent || 100)) / 100;
-          if (b.status === 'CANCELED') return sum + (actualPaid - (b.refund_amount || 0));
-          return sum + actualPaid;
-        }, 0);
+        // TỔNG DOANH THU GỌI HÀM TÍNH TOÁN
+        const totalRevenue = bookingsData.reduce((sum, b) => sum + calculateActualRevenue(b), 0);
 
-        // 🔥 LOGIC TÍNH TOÁN ĐƠN SẮP ĐẾN HẠN ĐÓNG TIỀN (<= 10 ngày)
         let countDeadline = 0;
         bookingsData.forEach(b => {
-            if (b.status !== 'CANCELED' && b.payment_percent === 50 && b.tour?.start_date) {
+            if (b.status !== 'CANCELED' && b.status !== 'cancelled' && b.payment_percent === 50 && b.tour?.start_date) {
                 const startDate = new Date(b.tour.start_date);
                 startDate.setHours(0,0,0,0);
                 const diffDays = Math.ceil((startDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
@@ -79,17 +119,19 @@ const DashboardPage = () => {
     return months.map((month, index) => {
       const revenue = bookings
         .filter(b => new Date(b.createdAt).getMonth() === index && new Date(b.createdAt).getFullYear() === currentYear)
-        .reduce((sum, b) => sum + (b.total_price * (b.payment_percent || 100) / 100), 0);
+        .reduce((sum, b) => sum + calculateActualRevenue(b), 0); // ĐỒNG BỘ DOANH THU TRONG BIỂU ĐỒ
       return { name: month, doanhThu: revenue };
     });
   }, [bookings]);
 
   const statusData = useMemo(() => {
-    const canceled = bookings.filter(b => b.status === 'CANCELED').length;
-    const deposit = bookings.filter(b => b.payment_percent === 50 && b.status !== 'CANCELED').length;
-    const full = bookings.filter(b => b.payment_percent === 100 && b.status !== 'CANCELED').length;
+    const canceled = bookings.filter(b => b.status === 'CANCELED' || b.status === 'cancelled').length;
+    const pending = bookings.filter(b => b.status === 'pending').length;
+    const deposit = bookings.filter(b => b.payment_percent === 50 && b.status !== 'CANCELED' && b.status !== 'cancelled' && b.status !== 'pending').length;
+    const full = bookings.filter(b => b.payment_percent === 100 && b.status !== 'CANCELED' && b.status !== 'cancelled' && b.status !== 'pending').length;
     return [
       { name: "Đã hủy", value: canceled, color: "#EF4444" },
+      { name: "Chờ TT", value: pending, color: "#EAB308" },
       { name: "Đã cọc 50%", value: deposit, color: "#F59E0B" },
       { name: "Thanh toán 100%", value: full, color: "#10B981" },
     ];
@@ -107,10 +149,8 @@ const DashboardPage = () => {
         </h2>
       </div>
 
-      {/* 🔥 WIDGET CẢNH BÁO: CHỈ HIỆN KHI CÓ ĐƠN SẮP ĐẾN HẠN 🔥 */}
       {deadlineCount > 0 && (
         <div 
-            // CHÚ Ý: Đổi đường dẫn '/bookings' dưới đây cho khớp với route Admin của bạn
             onClick={() => navigate('/admin/bookings', { state: { filterDeadline: true } })}
             className="bg-red-50 border-l-4 border-red-500 p-4 rounded-r-xl shadow-sm flex justify-between items-center cursor-pointer hover:bg-red-100 transition animate-fade-in-up"
         >
@@ -129,7 +169,6 @@ const DashboardPage = () => {
         </div>
       )}
 
-      {/* 4 Thẻ thống kê nhanh */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard title="Tổng doanh thu" value={formatPrice(stats.revenue)} color="from-green-500 to-emerald-600" icon="💰" />
         <StatCard title="Đơn đặt chỗ" value={stats.totalBookings} unit=" đơn" color="from-blue-500 to-indigo-600" icon="📦" />
@@ -137,7 +176,6 @@ const DashboardPage = () => {
         <StatCard title="Khách hàng" value={stats.totalUsers} unit=" người" color="from-orange-500 to-red-600" icon="👥" />
       </div>
 
-      {/* ... Phần Biểu đồ giữ nguyên ... */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 bg-white p-6 rounded-3xl shadow-sm border border-gray-100">
           <div className="flex justify-between items-center mb-6">
