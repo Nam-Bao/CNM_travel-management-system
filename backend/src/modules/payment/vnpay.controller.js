@@ -50,7 +50,7 @@ exports.createPaymentUrl = async (req, res) => {
         // Tạo chữ ký bảo mật (Hash)
         let signData = qs.stringify(vnp_Params, { encode: false });
         let hmac = crypto.createHmac("sha512", secretKey);
-        let signed = hmac.update(new Buffer.from(signData, 'utf-8')).digest("hex"); 
+        let signed = hmac.update(Buffer.from(signData, 'utf-8')).digest("hex"); 
         
         vnp_Params['vnp_SecureHash'] = signed;
         
@@ -66,17 +66,17 @@ exports.createPaymentUrl = async (req, res) => {
     }
 };
 
-// Hàm hỗ trợ sắp xếp Object của VNPay
+// Hàm hỗ trợ sắp xếp Object của VNPay 
 function sortObject(obj) {
-	let sorted = {};
-	let str = [];
-	let key;
-	for (key in obj){
-		if (obj.hasOwnProperty(key)) {
-		str.push(encodeURIComponent(key));
-		}
-	}
-	str.sort();
+    let sorted = {};
+    let str = [];
+    let key;
+    for (key in obj) {
+        if (Object.prototype.hasOwnProperty.call(obj, key)) {
+            str.push(encodeURIComponent(key));
+        }
+    }
+    str.sort();
     for (key = 0; key < str.length; key++) {
         sorted[str[key]] = encodeURIComponent(obj[str[key]]).replace(/%20/g, "+");
     }
@@ -95,7 +95,7 @@ exports.vnpayReturn = async (req, res) => {
         let secretKey = process.env.VNP_HASH_SECRET;
         let signData = qs.stringify(vnp_Params, { encode: false });
         let hmac = crypto.createHmac("sha512", secretKey);
-        let signed = hmac.update(new Buffer.from(signData, 'utf-8')).digest("hex");
+        let signed = hmac.update(Buffer.from(signData, 'utf-8')).digest("hex");
 
         if (secureHash === signed) {
             // Xác thực chữ ký thành công
@@ -106,9 +106,9 @@ exports.vnpayReturn = async (req, res) => {
                 const booking = await Booking.findById(bookingId).populate("tour");
                 
                 if (booking && booking.status === "pending") {
-                    // 2. Cập nhật thành công
+                    // 2. Cập nhật thành công 
+                    // (Chỉ đổi status sang SUCCESS, giữ nguyên payment_percent gốc đã lưu)
                     booking.status = "SUCCESS";
-                    booking.payment_percent = 100; // Hoặc tùy logic của bạn
                     await booking.save();
 
                     // 3. 🔥 GỬI EMAIL VÉ ĐIỆN TỬ TẠI ĐÂY 🔥
@@ -120,7 +120,8 @@ exports.vnpayReturn = async (req, res) => {
                             guest_size: booking.guest_size,
                             selected_beds: booking.selected_beds,
                             total_price: booking.total_price,
-                            payment_percent: booking.payment_percent
+                            // Truyền nguyên giá trị có sẵn trong DB vào Email
+                            payment_percent: booking.payment_percent 
                         };
                         await sendTicketEmail(emailData);
                         console.log("📧 Đã gửi Vé điện tử VNPay cho khách hàng!");
