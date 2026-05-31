@@ -18,7 +18,7 @@ const DashboardPage = () => {
   const [loading, setLoading] = useState(true);
   const [deadlineCount, setDeadlineCount] = useState(0);
 
-  // 🔥 HÀM TÍNH DOANH THU THỰC TẾ (Đã đồng bộ 100% với file BookingHistory.jsx) 🔥
+// 🔥 HÀM TÍNH DOANH THU THỰC TẾ (Đã ép buộc tính toán bằng ngày hủy) 🔥
   const calculateActualRevenue = (b) => {
     // 1. Đơn chưa thanh toán -> Doanh thu = 0
     if (b.status === 'pending') return 0;
@@ -29,11 +29,8 @@ const DashboardPage = () => {
     // 3. Xử lý trường hợp đơn bị Hủy
     if (b.status === 'CANCELED' || b.status === 'cancelled') {
         
-        // Nếu Backend của bạn có lưu số tiền hoàn vào DB thì dùng luôn:
-        if (b.refund_amount !== undefined) {
-            return actualPaid - b.refund_amount;
-        }
-
+        // 🔥 ĐÃ XÓA CHECK b.refund_amount ĐỂ TRÁNH LỖI DEFAULT = 0 TỪ DATABASE 🔥
+        
         // Tự động tính tiền hoàn dựa trên số ngày (Đồng bộ với BookingHistory.jsx)
         if (b.tour && b.tour.start_date) {
             const cancelDate = new Date(b.updatedAt || b.createdAt);
