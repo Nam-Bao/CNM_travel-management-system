@@ -39,6 +39,16 @@ const Footer = () => {
             </li>
           </ul>
         </div>
+        <div>
+          <h3 className="text-lg font-bold text-white mb-4">Giới thiệu</h3>
+          <ul className="text-sm space-y-2">
+            <li>
+              <Link to="/about" className="hover:text-white transition">
+                Về chúng tôi
+              </Link>
+            </li>
+          </ul>
+        </div>
       </div>
       <div className="text-center text-xs border-t border-gray-700 mt-8 pt-8">
         <p className="text-gray-600 text-[10px] font-bold uppercase tracking-[0.2em]">&copy; {new Date().getFullYear()} TRAVELOKE PLATFORM - PHÁT TRIỂN BỞI SINH VIÊN IUH</p>

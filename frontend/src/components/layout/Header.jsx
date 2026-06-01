@@ -45,26 +45,26 @@ const Header = () => {
         </Link>
 
         {/* THANH NAVIGATION CHO KHÁCH HÀNG */}
-        <nav className="hidden md:flex items-center gap-8 font-bold text-gray-600">
+        {/* <nav className="hidden md:flex items-center gap-8 font-bold text-gray-600">
           <Link to="/" className="hover:text-blue-600 transition">
             Trang chủ
-          </Link>
+          </Link> */}
 
           {/* MỤC KHÁCH SẠN MỚI THÊM */}
-          <Link
+          {/* <Link
             to="/hotels"
             className="hover:text-blue-600 transition flex items-center gap-1"
           >
             Khách sạn
-          </Link>
+          </Link> */}
 
           {/* <Link to="/tours" className="hover:text-blue-600 transition">
             Khám phá Tour
-          </Link> */}
+          </Link>
           <Link to="/about" className="hover:text-blue-600 transition">
             Về chúng tôi
           </Link>
-        </nav>
+        </nav> */}
 
         {/* KHU VỰC USER / LOGIN */}
         <div className="flex items-center gap-6">
