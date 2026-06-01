@@ -172,38 +172,35 @@ const TourDetailPage = () => {
             ))}
           </div>
         );
-      case "cancellation":
-        // return (
-        //   <div className="space-y-6 animate-fadeIn">
-        //     <h2 className="text-xl font-black text-blue-800 border-l-4 border-blue-600 pl-3 mb-6 uppercase italic tracking-tighter">
-        //       Chính sách hủy / phạt
-        //     </h2>
-        //     <div className="bg-white p-8 rounded-3xl border shadow-sm space-y-6">
-        //       <div className="bg-red-50 p-6 rounded-2xl border border-red-100">
-        //         <p className="font-black text-red-600 uppercase text-[10px] mb-2">
-        //           ⚠️ Lưu ý quan trọng:
-        //         </p>
-        //         <p className="text-[12px] text-red-700 font-bold leading-relaxed italic">
-        //           Sau khi đặt cọc, nếu Quý khách hủy tour công ty chúng tôi sẽ
-        //           không chịu trách nhiệm hoàn lại tiền cọc.
-        //         </p>
-        //       </div>
-        //       <ul className="text-[13px] text-gray-600 space-y-4 font-medium italic ml-4">
-        //         <li>
-        //           <span className="text-blue-600">●</span> Hủy trước 30 ngày:
-        //           Phạt 75% giá trị tour.
-        //         </li>
-        //         <li>
-        //           <span className="text-blue-600">●</span> Hủy dưới 30 ngày:
-        //           Phạt 100% giá trị tour.
-        //         </li>
-        //       </ul>
-        //     </div>
-        //   </div>
-        // );
-          <Link to="privacy-policy" className="hover:text-white transition">
-              Chính sách hoàn hủy
-          </Link>
+      // case "cancellation":
+      //   return (
+      //     <div className="space-y-6 animate-fadeIn">
+      //       <h2 className="text-xl font-black text-blue-800 border-l-4 border-blue-600 pl-3 mb-6 uppercase italic tracking-tighter">
+      //         Chính sách hủy / phạt
+      //       </h2>
+      //       <div className="bg-white p-8 rounded-3xl border shadow-sm space-y-6">
+      //         <div className="bg-red-50 p-6 rounded-2xl border border-red-100">
+      //           <p className="font-black text-red-600 uppercase text-[10px] mb-2">
+      //             ⚠️ Lưu ý quan trọng:
+      //           </p>
+      //           <p className="text-[12px] text-red-700 font-bold leading-relaxed italic">
+      //             Sau khi đặt cọc, nếu Quý khách hủy tour công ty chúng tôi sẽ
+      //             không chịu trách nhiệm hoàn lại tiền cọc.
+      //           </p>
+      //         </div>
+      //         <ul className="text-[13px] text-gray-600 space-y-4 font-medium italic ml-4">
+      //           <li>
+      //             <span className="text-blue-600">●</span> Hủy trước 30 ngày:
+      //             Phạt 75% giá trị tour.
+      //           </li>
+      //           <li>
+      //             <span className="text-blue-600">●</span> Hủy dưới 30 ngày:
+      //             Phạt 100% giá trị tour.
+      //           </li>
+      //         </ul>
+      //       </div>
+      //     </div>
+      //   );
       default:
         return null;
     }
