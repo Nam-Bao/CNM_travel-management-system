@@ -64,7 +64,7 @@ const login = async (req, res) => {
     if (user.status === "banned") {
       return res.status(403).json({ 
         success: false, 
-        message: "Tài khoản của bạn đã bị khóa. Vui lòng liên hệ quản trị viên để được hỗ trợ!" 
+        message: "Tài khoản của bạn đã bị khóa. Vui lòng liên bên CSKH (0987654321) để được hỗ trợ!" 
       });
     }    
 
