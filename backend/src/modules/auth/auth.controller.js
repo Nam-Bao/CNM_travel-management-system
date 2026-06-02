@@ -61,6 +61,13 @@ const login = async (req, res) => {
         .json({ message: "Email hoặc mật khẩu không đúng!" });
     }
 
+    if (user.status === "banned") {
+      return res.status(403).json({ 
+        success: false, 
+        message: "Tài khoản của bạn đã bị khóa. Vui lòng liên hệ quản trị viên để được hỗ trợ!" 
+      });
+    }    
+
     // 3. Tạo token JWT (Vé thông hành)
     // Payload chứa id và role để phân quyền sau này, token có hạn 1 ngày (1d)
     const token = jwt.sign(
@@ -68,6 +75,7 @@ const login = async (req, res) => {
       process.env.JWT_SECRET,
       { expiresIn: "1d" },
     );
+
 
     // 4. Trả về token và thông tin cơ bản
     res.status(200).json({

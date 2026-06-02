@@ -4,9 +4,9 @@ const Tour = require("../modules/tours/tour.model");
 const sendReminderEmail = require("../utils/sendReminderEmail");
 
 const initReminderCronJob = () => {
-    // Cấu hình: Chạy tự động vào lúc 08:00 sáng mỗi ngày  */2 * * * *
+    // Cấu hình: Chạy tự động vào lúc 08:00 sáng mỗi ngày  */2 * * * * 0 8 * * *
     // Cấu trúc chuỗi biểu thức: (Phút | Giờ | Ngày trong tháng | Tháng | Ngày trong tuần)
-    cron.schedule("0 8 * * *", async () => {
+    cron.schedule("* * * * *", async () => {
         console.log("⏰ [Cron Job] Đang tiến hành quét đơn hàng để gửi nhắc nhở 10 ngày trước chuyến đi...");
         
         try {

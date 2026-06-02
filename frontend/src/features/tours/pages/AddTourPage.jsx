@@ -305,7 +305,7 @@ const AddTourPage = () => {
                       <option value="bed">🛏️ Xe giường nằm (24 giường)</option>
                     </select>
                   </div>
-                  <div>
+                  {/* <div>
                     <label className="block text-sm font-bold text-gray-700 mb-1">
                       💵 Phụ thu giường đôi (VNĐ)
                     </label>
@@ -321,7 +321,7 @@ const AddTourPage = () => {
                     <p className="text-xs text-gray-500 mt-1">
                       Chỉ áp dụng khi chọn xe giường nằm
                     </p>
-                  </div>
+                  </div> */}
                 </>
               )}
               <div className="md:col-span-2">
